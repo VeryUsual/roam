@@ -43,4 +43,5 @@ class EmptyForm(FlaskForm):
 
 class SubmitVideoForm(FlaskForm):
     video = TextAreaField('Enter video path', validators=[DataRequired()])
+    coords = TextAreaField('Enter GPS coords', validators=[DataRequired()])
     submit = SubmitField('Submit')

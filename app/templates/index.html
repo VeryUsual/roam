@@ -17,30 +17,25 @@
         }
     </style>
 
-    <h1>Hi, {{ current_user.username }}!</h1>
+    <br><br>
 
-    {% if form %}
-    <form action="" method="post">
-        {{ form.hidden_tag() }}
-        <p>
-            {{ form.video.label }}<br>
-            {{ form.video(cols=20, rows=4) }}
-            {% for error in form.video.errors %}
-            <span style="color: red">{{ error }}</span>
-            {% endfor %}
-        </p>
-        <p>{{ form.submit() }}</p>
-    </form>
-    {% endif %}
-
-    {% for video in videos %}
+    {% set video = videos[0] %}
     <div class="container">
         <video class="vid" autoplay loop playsinline controls src="{{ video.filepath }}"></video>
-        <p style="text-align: center;">Bunny Island, Belgium</p>
+        <p style="text-align: center;" class="location_coords">{{ video.lat }}, {{ video.lon }}</p>
         <p>By <a href="{{ url_for('user', username=video.author.username) }}">{{ video.author.username }}</a>. Posted {{ moment(video.timestamp).fromNow() }}</p>
-        <button style="float: left; font-size: xx-large;">Stay</button>
+        <button style="float: left; font-size: xx-large;" onclick="window.location.href='/videos/closest/{{ video.id }}';">Stay</button>
         <button style="float: right; font-size: xx-large;">Leave</button>
+        <div id="map" style="position: absolute; top: 20vh; right: 5%; height: 50vh; width: 20vw;"></div>
+        <script>
+            var map = L.map('map').setView([{{ video.lat }}, {{ video.lon }}], 13);
+
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            L.marker([{{ video.lat }}, {{ video.lon }}]).addTo(map);
+        </script>
     </div>
-    <br><br><hr><br><br>
-    {% endfor %}
+    <br><br><hr><br>
 {% endblock %}

@@ -6,6 +6,8 @@ from app.forms import LoginForm, RegistrationForm, EditProfileForm, EmptyForm, S
 from app.models import User, Video
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
+from math import radians
+from sqlalchemy import select, func
 
 @app.before_request
 def before_request():
@@ -13,18 +15,67 @@ def before_request():
         current_user.last_seen = datetime.now(timezone.utc)
         db.session.commit()
 
-@app.route("/", methods=['GET', 'POST'])
+@app.route("/")
 @login_required
 def index():
+    videos = db.session.scalars(current_user.following_videos()).all()
+    return render_template("index.html", videos=videos)
+
+@app.route("/videos/<video_id>")
+@login_required
+def video(video_id):
+    query = sa.select(Video).where(Video.id == video_id).order_by(Video.timestamp.desc())
+    videos = db.session.scalars(query).all()
+    if len(videos) >= 1:
+        return render_template("index.html", videos=videos)
+    else:
+        return render_template("404.html"), 404
+
+@app.route("/videos/closest/<video_id>")
+@login_required
+def closest_video(video_id):
+    query = sa.select(Video).where(Video.id == video_id)
+    video = db.session.scalar(query)
+    current_lat = float(video.lat)
+    current_lon = float(video.lon)
+
+    distance = (
+        6371 * 2 * func.asin(
+            func.sqrt(
+                func.pow(func.sin(func.radians((Video.lat - current_lat) / 2)), 2)
+                + func.cos(func.radians(current_lat))
+                * func.cos(func.radians(Video.lat))
+                * func.pow(func.sin(func.radians((Video.lon - current_lon) / 2)), 2)
+            )
+        )
+    )
+    
+    statement = (
+        select(Video)
+        .where(Video.id != video_id)
+        .order_by(distance.asc())
+        .limit(1)
+    )
+
+    closest_video = db.session.scalar(statement)
+    if closest_video:
+        return redirect(url_for("video", video_id=closest_video.id))
+    else:
+        return "None found"
+
+@app.route("/upload", methods=['GET', 'POST'])
+@login_required
+def upload():
     form = SubmitVideoForm()
     if form.validate_on_submit():
-        video = Video(filepath=form.video.data, author=current_user)
+        lat = form.coords.data.split(", ")[0]
+        lon = form.coords.data.split(", ")[1]
+        video = Video(filepath=form.video.data, author=current_user, lat=lat, lon=lon)
         db.session.add(video)
         db.session.commit()
         flash('Your video is now public!')
-        return redirect(url_for('index'))
-    videos = db.session.scalars(current_user.following_videos()).all()
-    return render_template("index.html", form=form, videos=videos)
+        return redirect(url_for('upload'))
+    return render_template("upload.html", form=form)
 
 @app.route('/explore')
 @login_required

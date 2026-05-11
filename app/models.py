@@ -89,6 +89,8 @@ class Video(db.Model):
     timestamp: so.Mapped[datetime] = so.mapped_column(index=True, default=lambda: datetime.now(timezone.utc))
     user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id), index=True)
     author: so.Mapped[User] = so.relationship(back_populates="videos")
+    lat: so.Mapped[float] = so.mapped_column(sa.Float, nullable=False, server_default="0.0")
+    lon: so.Mapped[float] = so.mapped_column(sa.Float, nullable=False, server_default="0.0")
 
     def __repr__(self):
         return '<Video {}>'.format(self.filepath)
