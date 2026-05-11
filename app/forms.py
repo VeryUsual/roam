@@ -40,3 +40,7 @@ class EditProfileForm(FlaskForm):
 
 class EmptyForm(FlaskForm):
     submit = SubmitField('Submit')
+
+class SubmitVideoForm(FlaskForm):
+    video = TextAreaField('Enter video path', validators=[DataRequired()])
+    submit = SubmitField('Submit')

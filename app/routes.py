@@ -2,8 +2,8 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_user, logout_user, login_required
 import sqlalchemy as sa
 from app import app, db
-from app.forms import LoginForm, RegistrationForm, EditProfileForm, EmptyForm
-from app.models import User
+from app.forms import LoginForm, RegistrationForm, EditProfileForm, EmptyForm, SubmitVideoForm
+from app.models import User, Video
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
 
@@ -13,10 +13,25 @@ def before_request():
         current_user.last_seen = datetime.now(timezone.utc)
         db.session.commit()
 
-@app.route("/")
+@app.route("/", methods=['GET', 'POST'])
 @login_required
 def index():
-    return render_template("index.html")
+    form = SubmitVideoForm()
+    if form.validate_on_submit():
+        video = Video(filepath=form.video.data, author=current_user)
+        db.session.add(video)
+        db.session.commit()
+        flash('Your video is now public!')
+        return redirect(url_for('index'))
+    videos = db.session.scalars(current_user.following_videos()).all()
+    return render_template("index.html", form=form, videos=videos)
+
+@app.route('/explore')
+@login_required
+def explore():
+    query = sa.select(Video).order_by(Video.timestamp.desc())
+    videos = db.session.scalars(query).all()
+    return render_template('index.html', title='Explore', videos=videos)
 
 @app.route("/welcome")
 def welcome():
@@ -77,9 +92,7 @@ def edit_profile():
 @app.route('/user/<username>')
 def user(username):
     user = db.first_or_404(sa.select(User).where(User.username == username))
-    videos = [
-        {'author': user, 'filepath': 'videos/test.mp4'}
-    ]
+    videos = db.session.scalars(user.videos.select().order_by(Video.timestamp.desc())).all()
     form = EmptyForm()
     return render_template('user.html', user=user, videos=videos, form=form)
 

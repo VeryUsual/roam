@@ -1,5 +1,46 @@
 {% extends "base.html" %}
 
 {% block content %}
+    <style>
+        .container {
+            width: 360px;
+            aspect-ratio: 9 / 20;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        .vid {
+            width: 360px;
+            aspect-ratio: 9 / 16;
+            object-fit: cover;
+            object-position: center;
+        }
+    </style>
+
     <h1>Hi, {{ current_user.username }}!</h1>
+
+    {% if form %}
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.video.label }}<br>
+            {{ form.video(cols=20, rows=4) }}
+            {% for error in form.video.errors %}
+            <span style="color: red">{{ error }}</span>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+    {% endif %}
+
+    {% for video in videos %}
+    <div class="container">
+        <video class="vid" autoplay loop playsinline controls src="{{ video.filepath }}"></video>
+        <p style="text-align: center;">Bunny Island, Belgium</p>
+        <p>By <a href="{{ url_for('user', username=video.author.username) }}">{{ video.author.username }}</a>. Posted {{ moment(video.timestamp).fromNow() }}</p>
+        <button style="float: left; font-size: xx-large;">Stay</button>
+        <button style="float: right; font-size: xx-large;">Leave</button>
+    </div>
+    <br><br><hr><br><br>
+    {% endfor %}
 {% endblock %}
