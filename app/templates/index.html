@@ -4,7 +4,7 @@
     <style>
         .container {
             width: 360px;
-            aspect-ratio: 9 / 20;
+            aspect-ratio: 9 / 21;
             overflow: hidden;
             margin: 0 auto;
         }
@@ -17,12 +17,31 @@
         }
     </style>
 
-    <br>
-
     {% set video = videos[0] %}
     <div class="container">
         <video class="vid" autoplay loop playsinline controls src="{{ video.filepath }}"></video>
         <p>By <a href="{{ url_for('user', username=video.author.username) }}">{{ video.author.username }}</a>. Posted {{ moment(video.timestamp).fromNow() }}</p>
+        <p style="float: right;">
+            <button style="font-size: large;" onclick="like_video()" id="like_button">Like</button>
+        </p>
+
+        {% if video.author == current_user %}
+        {% elif not current_user.is_following(video.author) %}
+        <p>
+            <form action="{{ url_for('follow', username=video.author.username) }}" method="post">
+                {{ form.hidden_tag() }}
+                {{ form.submit(value='Follow ' + video.author.username) }}
+            </form>
+        </p>
+        {% else %}
+        <p>
+            <form action="{{ url_for('unfollow', username=video.author.username) }}" method="post">
+                {{ form.hidden_tag() }}
+                {{ form.submit(value='Unfollow ' + video.author.username) }}
+            </form>
+        </p>
+        {% endif %}
+
         <p>{{ video.description | e | link_mentions | safe }}</p>
         <button style="float: left; font-size: xx-large;" onclick="window.location.href='/videos/closest/{{ video.id }}';">Stay</button>
         <button style="float: right; font-size: xx-large;" onclick="window.location.href='/videos/leave/{{ video.id }}';">Leave</button>
@@ -35,7 +54,19 @@
             }).addTo(map);
 
             L.marker([{{ video.lat }}, {{ video.lon }}]).addTo(map);
+
+            function like_video() {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        if (this.responseText == "Success") {
+                            document.getElementById("like_button").disabled = true;
+                        }
+                    }
+                };
+                xhttp.open("POST", "/api/like/{{video.id}}", true);
+                xhttp.send();
+            }
         </script>
     </div>
-    <br><br><hr><br>
 {% endblock %}

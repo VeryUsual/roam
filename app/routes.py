@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, request, send_from_directory, jsonify
+from flask import render_template, redirect, url_for, flash, request, send_from_directory, jsonify, make_response
 from flask_login import current_user, login_user, logout_user, login_required
 import sqlalchemy as sa
 from app import app, db
@@ -8,9 +8,12 @@ from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from math import radians
 from sqlalchemy import select, func
+from avatar_generator import Avatar
 import os
 from werkzeug.utils import secure_filename
 import re
+import random
+import string
 
 VIDEOS_FOLDER = "videos"
 ALLOWED_EXTENSIONS = {'mp4', 'mov', 'mkv', 'webm', 'ogv'}
@@ -35,16 +38,20 @@ def before_request():
 @app.route("/")
 @login_required
 def index():
+    form = EmptyForm()
     videos = db.session.scalars(current_user.following_videos()).all()
-    return render_template("index.html", videos=videos)
+    if len(videos) == 0:
+        return redirect(url_for("explore"))
+    return render_template("index.html", videos=videos, form=form)
 
-@app.route("/videos/<video_id>")
+@app.route("/videos/<int:video_id>")
 @login_required
 def video(video_id):
     query = sa.select(Video).where(Video.id == video_id).order_by(Video.timestamp.desc())
     videos = db.session.scalars(query).all()
     if len(videos) >= 1:
-        return render_template("index.html", videos=videos)
+        form = EmptyForm()
+        return render_template("index.html", videos=videos, form=form)
     else:
         return render_template("404.html"), 404
 
@@ -118,8 +125,13 @@ def leave_video(video_id):
 def upload():
     form = SubmitVideoForm()
     if form.validate_on_submit():
-        filename = secure_filename(form.video.data.filename)
+        filename = ''.join(random.choices(string.ascii_letters + string.digits, k=14)) + secure_filename(form.video.data.filename)
+        print(filename)
         if allowed_file(filename):
+            if len(form.coords.data.split(", ")) != 2:
+                flash('Invalid coords')
+                return redirect(url_for('upload'))
+
             form.video.data.save(os.path.join(app.instance_path, 'videos', filename))
 
             lat = form.coords.data.split(", ")[0]
@@ -139,7 +151,8 @@ def upload():
 def explore():
     query = sa.select(Video).order_by(Video.timestamp.desc())
     videos = db.session.scalars(query).all()
-    return render_template('index.html', title='Explore', videos=videos)
+    form = EmptyForm()
+    return render_template('index.html', title='Explore', videos=videos, form=form)
 
 @app.route("/welcome")
 def welcome():
@@ -223,6 +236,16 @@ def follow(username):
     else:
         return redirect(url_for('index'))
 
+@app.route('/api/like/<video_id>', methods=['POST'])
+@login_required
+def like(video_id):
+    video = db.session.scalar(sa.select(Video).where(Video.id == video_id))
+    if video is None:
+        return "Video not found"
+    current_user.like(video)
+    db.session.commit()
+    return "Success"
+
 @app.route('/unfollow/<username>', methods=['POST'])
 @login_required
 def unfollow(username):
@@ -254,3 +277,9 @@ def search():
     results = Video.query.filter(Video.description.ilike('%' + q + '%')).all()
 
     return render_template("search.html", results=results)
+
+@app.route("/avatar/<username>/<int:size>")
+def avatar(username, size):
+    avatar = Avatar.generate(size, username, "PNG")
+    headers = { 'Content-Type': 'image/png' }
+    return make_response(avatar, 200, headers)

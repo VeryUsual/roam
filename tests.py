@@ -25,7 +25,7 @@ class UserModelCase(unittest.TestCase):
     
     def test_avatar(self):
         u = User(username='test')
-        self.assertEqual(u.avatar(128), 'https://www.gravatar.com/avatar/098f6bcd4621d373cade4e832627b4f6?d=identicon&s=128')
+        self.assertEqual(u.avatar(128), '/avatar/test/128')
     
     def test_follow(self):
         u1 = User(username='user_one')

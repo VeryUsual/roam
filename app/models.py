@@ -19,6 +19,13 @@ followers = sa.Table(
     sa.Column('followed_id', sa.Integer, sa.ForeignKey('user.id'), primary_key=True)
 )
 
+likes = sa.Table(
+    "likes",
+    db.metadata,
+    sa.Column('liker_id', sa.Integer, sa.ForeignKey('user.id'), primary_key=True),
+    sa.Column('video_id', sa.Integer, sa.ForeignKey('video.id'), primary_key=True)
+)
+
 class User(UserMixin, db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     username: so.Mapped[str] = so.mapped_column(sa.String(64), index=True, unique=True)
@@ -26,6 +33,9 @@ class User(UserMixin, db.Model):
     videos: so.WriteOnlyMapped["Video"] = so.Relationship(back_populates="author")
     about_me: so.Mapped[Optional[str]] = so.mapped_column(sa.String(140))
     last_seen: so.Mapped[Optional[datetime]] = so.mapped_column(default=lambda: datetime.now(timezone.utc))
+
+    videos: so.Mapped[list["Video"]] = so.relationship("Video", back_populates="author", cascade="all, delete-orphan")
+
     following: so.WriteOnlyMapped['User'] = so.relationship(
         secondary=followers, primaryjoin=(followers.c.follower_id == id),
         secondaryjoin=(followers.c.followed_id == id),
@@ -34,6 +44,12 @@ class User(UserMixin, db.Model):
         secondary=followers, primaryjoin=(followers.c.followed_id == id),
         secondaryjoin=(followers.c.follower_id == id),
         back_populates='following')
+    liked_videos: so.Mapped[list['Video']] = so.relationship(
+        "Video",
+        secondary=likes,
+        back_populates="likers",
+        lazy="select"
+    )
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
@@ -45,8 +61,8 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password, password)
     
     def avatar(self, size):
-        digest = md5(self.username.lower().encode('utf-8')).hexdigest()
-        return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'
+        username = self.username.lower()
+        return f'/avatar/{username}/{size}'
     
     def follow(self, user):
         if not self.is_following(user):
@@ -82,6 +98,20 @@ class User(UserMixin, db.Model):
             .group_by(Video)
             .order_by(Video.timestamp.desc())
         )
+    
+    def like(self, video: "Video"):
+        if not self.has_liked(video):
+            self.liked_videos.append(video)
+    
+    def unlike(self, video: "Video"):
+        if self.has_liked(video):
+            self.liked_videos.remove(video)
+    
+    def has_liked(self, video: "Video") -> bool:
+        return video in self.liked_videos
+    
+    def likes_count(self) -> int:
+        return len(self.liked_videos)
 
 class Video(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -93,6 +123,18 @@ class Video(db.Model):
     lon: so.Mapped[float] = so.mapped_column(sa.Float, nullable=False, server_default="0.0")
     description: so.Mapped[str] = so.mapped_column(sa.String(1000), server_default="")
     hashtags: so.Mapped[str] = so.mapped_column(sa.String(500), server_default="")
+    likers: so.Mapped[list["User"]] = so.relationship(
+        "User",
+        secondary=likes,
+        back_populates="liked_videos",
+        lazy="select"
+    )
 
     def __repr__(self):
         return '<Video {}>'.format(self.filepath)
+    
+    def like_count(self) -> int:
+        return len(self.likers)
+    
+    def is_liked_by(self, user: "User") -> bool:
+        return user in self.likers
