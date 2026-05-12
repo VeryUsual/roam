@@ -48,13 +48,16 @@
       <a href="{{ url_for('index') }}">Home</a>
       <a href="{{ url_for('explore') }}">Explore</a>
       <a href="{{ url_for('upload') }}">Upload</a>
+      <input type="text" placeholder="Search" style="font-size: 17px; padding: 14px 16px; width: 30%; margin-left: 5%;" name="q" form="searchform">
       {% if current_user.is_anonymous %}
-      <a href="{{ url_for('login') }}">Login</a>
+      <a href="{{ url_for('login') }}" style="float: right;">Login</a>
       {% else %}
-      <a href="{{ url_for('user', username=current_user.username) }}">Profile</a>
-      <a href="{{ url_for('logout') }}">Logout</a>
+      <a href="{{ url_for('user', username=current_user.username) }}" style="float: right;">Profile</a>
+      <a href="{{ url_for('logout') }}" style="float: right;">Logout</a>
       {% endif %}
     </div>
+
+    <form action="/search" method="GET" id="searchform"></form>
 
     {% with messages = get_flashed_messages() %}
     {% if messages %}
@@ -67,6 +70,7 @@
     {% endwith %}
 
     <div style="padding-left:16px">
+      <br>
     {% block content %}{% endblock %}
     </div>
 

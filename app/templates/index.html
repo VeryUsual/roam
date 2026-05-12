@@ -17,12 +17,13 @@
         }
     </style>
 
-    <br><br>
+    <br>
 
     {% set video = videos[0] %}
     <div class="container">
         <video class="vid" autoplay loop playsinline controls src="{{ video.filepath }}"></video>
         <p>By <a href="{{ url_for('user', username=video.author.username) }}">{{ video.author.username }}</a>. Posted {{ moment(video.timestamp).fromNow() }}</p>
+        <p>{{ video.description | e | link_mentions | safe }}</p>
         <button style="float: left; font-size: xx-large;" onclick="window.location.href='/videos/closest/{{ video.id }}';">Stay</button>
         <button style="float: right; font-size: xx-large;" onclick="window.location.href='/videos/leave/{{ video.id }}';">Leave</button>
         <div id="map" style="position: absolute; top: 20vh; right: 5%; height: 50vh; width: 20vw;"></div>

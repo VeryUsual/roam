@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, request, send_from_directory
+from flask import render_template, redirect, url_for, flash, request, send_from_directory, jsonify
 from flask_login import current_user, login_user, logout_user, login_required
 import sqlalchemy as sa
 from app import app, db
@@ -10,9 +10,18 @@ from math import radians
 from sqlalchemy import select, func
 import os
 from werkzeug.utils import secure_filename
+import re
 
 VIDEOS_FOLDER = "videos"
 ALLOWED_EXTENSIONS = {'mp4', 'mov', 'mkv', 'webm', 'ogv'}
+
+def link_mentions(value):
+    def repl(m):
+        handle = m.group(1)
+        return f'<a href="/user/{handle}">@{handle}</a>'
+    return re.sub(r'@([A-Za-z0-9_]+)', repl, value)
+
+app.jinja_env.filters["link_mentions"] = link_mentions
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -115,7 +124,7 @@ def upload():
 
             lat = form.coords.data.split(", ")[0]
             lon = form.coords.data.split(", ")[1]
-            video = Video(filepath='video_files/' + filename, author=current_user, lat=lat, lon=lon)
+            video = Video(filepath='video_files/' + filename, author=current_user, lat=lat, lon=lon, description=form.description.data, hashtags=form.hashtags.data)
             db.session.add(video)
             db.session.commit()
             flash('Your video is now public!')
@@ -238,3 +247,10 @@ def unfollow(username):
 def videos_files(name):
     print(name)
     return send_from_directory(os.path.join(app.instance_path, 'videos'), name)
+
+@app.route('/search')
+def search():
+    q = request.args.get("q")
+    results = Video.query.filter(Video.description.ilike('%' + q + '%')).all()
+
+    return render_template("search.html", results=results)

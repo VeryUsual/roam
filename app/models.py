@@ -91,6 +91,8 @@ class Video(db.Model):
     author: so.Mapped[User] = so.relationship(back_populates="videos")
     lat: so.Mapped[float] = so.mapped_column(sa.Float, nullable=False, server_default="0.0")
     lon: so.Mapped[float] = so.mapped_column(sa.Float, nullable=False, server_default="0.0")
+    description: so.Mapped[str] = so.mapped_column(sa.String(1000), server_default="")
+    hashtags: so.Mapped[str] = so.mapped_column(sa.String(500), server_default="")
 
     def __repr__(self):
         return '<Video {}>'.format(self.filepath)

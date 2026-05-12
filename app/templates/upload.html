@@ -18,6 +18,18 @@
             {% for error in form.coords.errors %}
             <span style="color: red">{{ error }}</span>
             {% endfor %}
+            <br><br>
+            {{ form.description.label }}<br>
+            {{ form.description(cols=20, rows=4) }}
+            {% for error in form.description.errors %}
+            <span style="color: red">{{ error }}</span>
+            {% endfor %}
+            <br><br>
+            {{ form.hashtags.label }}<br>
+            {{ form.hashtags(cols=20, rows=4) }}
+            {% for error in form.hashtags.errors %}
+            <span style="color: red">{{ error }}</span>
+            {% endfor %}
         </p>
         <p>{{ form.submit() }}</p>
     </form>

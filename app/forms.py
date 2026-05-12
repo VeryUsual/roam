@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileRequired
+from flask_wtf.file import FileField, FileRequired, FileAllowed
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, ValidationError, EqualTo, Length
 import sqlalchemy as sa
@@ -43,6 +43,8 @@ class EmptyForm(FlaskForm):
     submit = SubmitField('Submit')
 
 class SubmitVideoForm(FlaskForm):
-    video = FileField('Video file', validators=[FileRequired()])
+    video = FileField('Video file', validators=[FileRequired(), FileAllowed(["mp4", "mov", "mkv", "webm", "ogv"], "File type must be mp4, mov, mkv, webm, or ogv!")], render_kw={"accept": ".mp4,.mov,.mkv,.webm,.ogv"})
     coords = TextAreaField('Enter GPS coords', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    hashtags = TextAreaField('Hashtags')
     submit = SubmitField('Submit')
