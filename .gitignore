@@ -1,2 +1,4 @@
 roam.db
 instance/videos/*
+app/__pycache__
+__pycache__
