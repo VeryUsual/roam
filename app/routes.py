@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, send_from_directory
 from flask_login import current_user, login_user, logout_user, login_required
 import sqlalchemy as sa
 from app import app, db
@@ -8,6 +8,14 @@ from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from math import radians
 from sqlalchemy import select, func
+import os
+from werkzeug.utils import secure_filename
+
+VIDEOS_FOLDER = "videos"
+ALLOWED_EXTENSIONS = {'mp4', 'mov', 'mkv', 'webm', 'ogv'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.before_request
 def before_request():
@@ -63,18 +71,58 @@ def closest_video(video_id):
     else:
         return "None found"
 
+@app.route("/videos/leave/<video_id>")
+@login_required
+def leave_video(video_id):
+    query = sa.select(Video).where(Video.id == video_id)
+    video = db.session.scalar(query)
+    current_lat = float(video.lat)
+    current_lon = float(video.lon)
+
+    distance = (
+        6371 * 2 * func.asin(
+            func.sqrt(
+                func.pow(func.sin(func.radians((Video.lat - current_lat) / 2)), 2)
+                + func.cos(func.radians(current_lat))
+                * func.cos(func.radians(Video.lat))
+                * func.pow(func.sin(func.radians((Video.lon - current_lon) / 2)), 2)
+            )
+        )
+    ).label("distance")
+    
+    statement = (
+        select(Video)
+        .where(Video.id != video_id)
+        .where(distance >= 600)
+        .order_by(func.random())
+        .limit(1)
+    )
+
+    picked_video = db.session.scalar(statement)
+    if picked_video:
+        return redirect(url_for("video", video_id=picked_video.id))
+    else:
+        return "None found"
+
 @app.route("/upload", methods=['GET', 'POST'])
 @login_required
 def upload():
     form = SubmitVideoForm()
     if form.validate_on_submit():
-        lat = form.coords.data.split(", ")[0]
-        lon = form.coords.data.split(", ")[1]
-        video = Video(filepath=form.video.data, author=current_user, lat=lat, lon=lon)
-        db.session.add(video)
-        db.session.commit()
-        flash('Your video is now public!')
-        return redirect(url_for('upload'))
+        filename = secure_filename(form.video.data.filename)
+        if allowed_file(filename):
+            form.video.data.save(os.path.join(app.instance_path, 'videos', filename))
+
+            lat = form.coords.data.split(", ")[0]
+            lon = form.coords.data.split(", ")[1]
+            video = Video(filepath='video_files/' + filename, author=current_user, lat=lat, lon=lon)
+            db.session.add(video)
+            db.session.commit()
+            flash('Your video is now public!')
+            return redirect(url_for('upload'))
+        else:
+            flash('File type must be mp4, mov, mkv, webm, or ogv!')
+            return redirect(url_for('upload'))
     return render_template("upload.html", form=form)
 
 @app.route('/explore')
@@ -185,3 +233,8 @@ def unfollow(username):
         return redirect(url_for('user', username=username))
     else:
         return redirect(url_for('index'))
+
+@app.route('/video_files/<name>')
+def videos_files(name):
+    print(name)
+    return send_from_directory(os.path.join(app.instance_path, 'videos'), name)
