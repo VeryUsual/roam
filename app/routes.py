@@ -40,6 +40,7 @@ admin = Admin(app, name="Roam Admin Panel")
 with app.app_context():
     db.create_all()
 
+
 class RoamAdminModelView(ModelView):
     can_export = True
 
@@ -128,7 +129,9 @@ def video_analytics(video_id):
 
     videos = db.session.scalars(current_user.videos.select())
     if video.user_id == current_user.id:
-        return render_template("video_analytics.html", title="Video Analytics", video=video, videos=videos)
+        return render_template(
+            "video_analytics.html", title="Video Analytics", video=video, videos=videos
+        )
     else:
         return "Unauthorized", 401
 
@@ -244,7 +247,7 @@ def explore():
     videos = db.session.scalars(query).all()
 
     if len(videos) == 0:
-        return redirect(url_for('upload'))
+        return redirect(url_for("upload"))
 
     form = EmptyForm()
     return render_template("index.html", title="Explore", videos=videos, form=form)
@@ -282,7 +285,11 @@ def register():
     form = RegistrationForm()
     if form.validate_on_submit():
         user = User(username=form.username.data)
-        user.set_password(form.password.data)
+        try:
+            user.set_password(form.password.data)
+        except Exception:
+            flash("Your password is too weak. Please try a stronger one.")
+            return redirect(url_for("register"))
         db.session.add(user)
         db.session.commit()
         flash("You are now registered! Please log in with your details.")
@@ -333,7 +340,9 @@ def user(username):
         user.videos.select().order_by(Video.timestamp.desc())
     ).all()
     form = EmptyForm()
-    return render_template("user.html", title="@" + user.username, user=user, videos=videos, form=form)
+    return render_template(
+        "user.html", title="@" + user.username, user=user, videos=videos, form=form
+    )
 
 
 @app.route("/follow/<username>", methods=["POST"])
@@ -440,6 +449,7 @@ def avatar(username, size):
     headers = {"Content-Type": "image/png"}
     return make_response(avatar, 200, headers)
 
-@app.route('/static/<path:filename>')
+
+@app.route("/static/<path:filename>")
 def static_files(filename):
     return send_from_directory("static", filename)

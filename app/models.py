@@ -8,6 +8,9 @@ from flask_login import UserMixin
 from app import login
 from hashlib import md5
 from collections import Counter
+from password_strength import PasswordPolicy
+
+policy = PasswordPolicy.from_names(strength=0.25)
 
 
 @login.user_loader
@@ -72,6 +75,9 @@ class User(UserMixin, db.Model):
         return "<User {}>".format(self.username)
 
     def set_password(self, password):
+        ptest = policy.test(password)
+        if ptest != []:
+            raise Exception(str(ptest))
         self.password = generate_password_hash(password)
 
     def check_password(self, password):

@@ -19,11 +19,13 @@ class UserModelCase(unittest.TestCase):
         db.drop_all()
         self.app_context.pop()
 
-    def test_password_hashing(self):
+    def test_passwords(self):
         u = User(username="test")
-        u.set_password("secret")
-        self.assertFalse(u.check_password("password"))
-        self.assertTrue(u.check_password("secret"))
+        u.set_password("s3crEt12@5161")
+        with self.assertRaises(Exception):
+            u.set_password("secret")
+        self.assertFalse(u.check_password("secret"))
+        self.assertTrue(u.check_password("s3crEt12@5161"))
 
     def test_avatar(self):
         u = User(username="test")
