@@ -32,6 +32,28 @@ import random
 import string
 from PIL import Image
 from io import BytesIO
+from flask_admin.contrib.sqla import ModelView
+from flask_admin import Admin
+
+admin = Admin(app, name="roam")
+
+class RoamAdminModelView(ModelView):
+    can_export = True
+
+    def is_accessible(self):
+        return current_user.username == "admin"
+    
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect(url_for("login", next=request.url))
+
+class RoamAdminUserModelView(RoamAdminModelView):
+    can_export = True
+    column_export_exclude_list = ['password', ]
+
+    column_list = ['username', 'about_me', 'last_seen', 'profile_picture']
+
+admin.add_view(RoamAdminUserModelView(User, db.session))
+admin.add_view(RoamAdminModelView(Video, db.session))
 
 VIDEOS_FOLDER = "videos"
 ALLOWED_EXTENSIONS = {"mp4", "mov", "mkv", "webm", "ogv"}
