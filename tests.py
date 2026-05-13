@@ -23,8 +23,8 @@ class UserModelCase(unittest.TestCase):
         u = User(username="test")
         u.set_password("s3crEt12@5161")
         with self.assertRaises(Exception):
-            u.set_password("secret")
-        self.assertFalse(u.check_password("secret"))
+            u.set_password("s")
+        self.assertFalse(u.check_password("s"))
         self.assertTrue(u.check_password("s3crEt12@5161"))
 
     def test_avatar(self):
@@ -154,6 +154,37 @@ class VideoModelCase(unittest.TestCase):
         u2.view(p2)
         self.assertEqual(p2.view_count(), 1)
 
+    def test_video_privacy_levels(self):
+        u1 = User(username="user_one")
+        u2 = User(username="user_two")
+        db.session.add_all([u1, u2])
+
+        now = datetime.now(timezone.utc)
+        p1 = Video(
+            filepath="video1.mp4",
+            author=u2,
+            timestamp=now + timedelta(seconds=1),
+            privacy_level=0
+        )
+        p2 = Video(
+            filepath="video2.mp4",
+            author=u2,
+            timestamp=now + timedelta(seconds=4),
+            privacy_level=1
+        )
+        p3 = Video(
+            filepath="video3.mp4",
+            author=u2,
+            timestamp=now + timedelta(seconds=4),
+            privacy_level=2
+        )
+        db.session.add_all([p1, p2, p3])
+        db.session.commit()
+
+        u1.follow(u2)
+        self.assertEqual(len(db.session.scalars(u1.following_videos()).all()), 1)
+        p2.privacy_level = 0
+        self.assertEqual(len(db.session.scalars(u1.following_videos()).all()), 2)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

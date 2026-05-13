@@ -111,7 +111,7 @@ def index():
 @login_required
 def video(video_id):
     query = (
-        sa.select(Video).where(Video.id == video_id).order_by(Video.timestamp.desc())
+        sa.select(Video).where(Video.id == video_id).where(Video.privacy_level == 0 or Video.privacy_level == 1).order_by(Video.timestamp.desc())
     )
     videos = db.session.scalars(query).all()
     if len(videos) >= 1:
@@ -243,7 +243,7 @@ def upload():
 @app.route("/explore")
 @login_required
 def explore():
-    query = sa.select(Video).order_by(Video.timestamp.desc())
+    query = sa.select(Video).order_by(Video.timestamp.desc()).where(Video.privacy_level == 0)
     videos = db.session.scalars(query).all()
 
     if len(videos) == 0:

@@ -10,7 +10,7 @@ from hashlib import md5
 from collections import Counter
 from password_strength import PasswordPolicy
 
-policy = PasswordPolicy.from_names(strength=0.25)
+policy = PasswordPolicy.from_names(strength=0.15)
 
 
 @login.user_loader
@@ -126,6 +126,9 @@ class User(UserMixin, db.Model):
                     Author.id == self.id,
                 )
             )
+            .where(
+                Video.privacy_level == 0
+            )
             .group_by(Video)
             .order_by(Video.timestamp.desc())
         )
@@ -177,6 +180,7 @@ class Video(db.Model):
     viewers: so.Mapped[list["User"]] = so.relationship(
         "User", secondary=views, back_populates="viewed_videos", lazy="select"
     )
+    privacy_level: so.Mapped[int] = so.mapped_column(server_default="0", default="0") # 0 is public, 1 is unlisted, and 2 is private
 
     def __repr__(self):
         return "<Video {}>".format(self.filepath)
