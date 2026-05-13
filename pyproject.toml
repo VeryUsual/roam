@@ -1,3 +1,7 @@
+[project]
+name = "roam"
+dynamic = ["version"]
+
 [tool.black]
 exclude = '''
 /(
