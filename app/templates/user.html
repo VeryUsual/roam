@@ -10,7 +10,7 @@
             {% endif %}
             <td>
                 <h1>{{ user.username }}</h1>
-                {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+                {% if user.about_me %}<p id="about_me">{{ user.about_me }}</p>{% endif %}
                 {% if user.last_seen %}<p>Last seen on: {{ moment(user.last_seen).format('LLL') }}</p>{% endif %}
 
                 {% if user == current_user %}
@@ -43,4 +43,12 @@
         </tr>
     {% endfor %}
     </table>
+
+    <script src="/static/marked.umd.js"></script>
+    <script src="/static/dompurify.min.js"></script>
+    <script>
+        if (document.getElementById("about_me")) {
+            document.getElementById("about_me").innerHTML = DOMPurify.sanitize(marked.parse(document.getElementById("about_me").innerHTML));
+        }
+    </script>
 {% endblock %}

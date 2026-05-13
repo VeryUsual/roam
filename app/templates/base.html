@@ -49,7 +49,7 @@
       <a href="{{ url_for('explore') }}">Explore</a>
       <a href="{{ url_for('upload') }}">Upload</a>
       {% if current_user.username == 'admin' %}<a href="{{ url_for('admin.index') }}">Admin</a>{% endif %}
-      <input type="text" placeholder="Search" style="font-size: 17px; padding: 14px 16px; width: 30%; margin-left: 5%;" name="q" form="searchform">
+      <input type="text" placeholder="Search" style="font-size: 17px; padding: 14px 16px; width: 30%; margin-left: 5%;" name="q" form="searchform" required>
       {% if current_user.is_anonymous %}
       <a href="{{ url_for('login') }}" style="float: right;">Login</a>
       {% else %}

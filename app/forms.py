@@ -30,11 +30,10 @@ class RegistrationForm(FlaskForm):
 
 class EditProfileForm(FlaskForm):
     # username = StringField('Username', validators=[DataRequired()])
-    about_me = TextAreaField("About me", validators=[Length(min=0, max=140)])
+    about_me = TextAreaField("About me (Markdown formatted)", validators=[Length(min=0, max=140)])
     profile_picture = FileField(
         "Profile picture",
         validators=[
-            FileRequired(),
             FileAllowed(
                 ["png", "jpg", "jpeg", "bmp", "webp", "svg", "gif"],
                 "File type must be png, jpg, jpeg, bmp, webp, svg, or gif.",

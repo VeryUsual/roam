@@ -35,8 +35,10 @@ from io import BytesIO
 from flask_admin.contrib.sqla import ModelView
 from flask_admin import Admin
 
-admin = Admin(app, name="roam")
+admin = Admin(app, name="Roam Admin Panel")
 
+with app.app_context():
+    db.create_all()
 
 class RoamAdminModelView(ModelView):
     can_export = True
@@ -126,7 +128,7 @@ def video_analytics(video_id):
 
     videos = db.session.scalars(current_user.videos.select())
     if video.user_id == current_user.id:
-        return render_template("video_analytics.html", video=video, videos=videos)
+        return render_template("video_analytics.html", title="Video Analytics", video=video, videos=videos)
     else:
         return "Unauthorized", 401
 
@@ -232,7 +234,7 @@ def upload():
         else:
             flash("File type must be mp4, mov, mkv, webm, or ogv!")
             return redirect(url_for("upload"))
-    return render_template("upload.html", form=form)
+    return render_template("upload.html", title="Upload", form=form)
 
 
 @app.route("/explore")
@@ -240,6 +242,10 @@ def upload():
 def explore():
     query = sa.select(Video).order_by(Video.timestamp.desc())
     videos = db.session.scalars(query).all()
+
+    if len(videos) == 0:
+        return redirect(url_for('upload'))
+
     form = EmptyForm()
     return render_template("index.html", title="Explore", videos=videos, form=form)
 
@@ -296,22 +302,23 @@ def logout():
 def edit_profile():
     form = EditProfileForm(current_user.username)
     if form.validate_on_submit():
-        filename = "".join(
-            random.choices(string.ascii_letters + string.digits, k=14)
-        ) + secure_filename(form.profile_picture.data.filename)
-        print(filename)
-        if allowed_pfp_file(filename):
-            form.profile_picture.data.save(
-                os.path.join(app.instance_path, "profilepictures", filename)
-            )
-            current_user.about_me = form.about_me.data
-            current_user.profile_picture = filename
-            db.session.commit()
-            flash("Your changes have been saved.")
-            return redirect(url_for("edit_profile"))
-        else:
-            flash("Invalid profile picture file.")
-            return redirect(url_for("edit_profile"))
+        current_user.about_me = form.about_me.data
+        if form.profile_picture.data:
+            filename = "".join(
+                random.choices(string.ascii_letters + string.digits, k=14)
+            ) + secure_filename(form.profile_picture.data.filename)
+            print(filename)
+            if allowed_pfp_file(filename):
+                form.profile_picture.data.save(
+                    os.path.join(app.instance_path, "profilepictures", filename)
+                )
+                current_user.profile_picture = filename
+            else:
+                flash("Invalid profile picture file.")
+                return redirect(url_for("edit_profile"))
+        db.session.commit()
+        flash("Your changes have been saved.")
+        return redirect(url_for("edit_profile"))
     elif request.method == "GET":
         # form.username.data = current_user.username
         form.about_me.data = current_user.about_me
@@ -326,7 +333,7 @@ def user(username):
         user.videos.select().order_by(Video.timestamp.desc())
     ).all()
     form = EmptyForm()
-    return render_template("user.html", user=user, videos=videos, form=form)
+    return render_template("user.html", title="@" + user.username, user=user, videos=videos, form=form)
 
 
 @app.route("/follow/<username>", methods=["POST"])
@@ -432,3 +439,7 @@ def avatar(username, size):
     avatar = Avatar.generate(size, username, "PNG")
     headers = {"Content-Type": "image/png"}
     return make_response(avatar, 200, headers)
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    return send_from_directory("static", filename)
