@@ -26,10 +26,10 @@ jobs:
           pip install black
           pip install -r requirements.txt
       
-      - name: Black check
-        run: |
-          black --check . --exclude migrations
-      
       - name: Run tests
         run: |
           python tests.py
+      
+      - name: Black check
+        run: |
+          black --check . --exclude migrations

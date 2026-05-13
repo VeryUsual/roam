@@ -34,7 +34,13 @@
         </tr>
     </table>
     <hr>
-    {% for video in videos %}
-    {{ video.author.username }} created the video: {{ video.filepath }}<br>
+    <table>
+    {% for row in videos|batch(5, none) %}
+        <tr>
+            {% for video in row %}
+            <td><p style="position: absolute; z-index: 1000; color: white; padding-left: 10px; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;">► {{video.view_count()}}</p><a href="/videos/{{video.id}}"><video style="height: 50vh; width: auto; filter: blur(2px); aspect-ratio: 9 / 16; object-fit: cover;" src="/{{ video.filepath }}#t=15,20"></video></a></td>
+            {% endfor %}
+        </tr>
     {% endfor %}
+    </table>
 {% endblock %}

@@ -29,6 +29,10 @@ class UserModelCase(unittest.TestCase):
         u = User(username="test")
         self.assertEqual(u.avatar(128), "/avatar/test/128")
 
+        u.profile_picture = "test.png"
+        self.assertEqual(u.avatar(128), "/pfp/" + u.profile_picture + "/128")
+        self.assertEqual(u.avatar(56), "/pfp/" + u.profile_picture + "/56")
+
     def test_follow(self):
         u1 = User(username="user_one")
         u2 = User(username="user_two")
@@ -101,6 +105,52 @@ class UserModelCase(unittest.TestCase):
         self.assertEqual(f2, [p2, p3])
         self.assertEqual(f3, [p3, p4])
         self.assertEqual(f4, [p4])
+
+
+class VideoModelCase(unittest.TestCase):
+    def setUp(self):
+        self.app_context = app.app_context()
+        self.app_context.push()
+        db.create_all()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
+
+    def test_video_views_and_likes(self):
+        u1 = User(username="user_one")
+        u2 = User(username="user_two")
+        db.session.add_all([u1, u2])
+
+        now = datetime.now(timezone.utc)
+        p1 = Video(
+            filepath="videofromuser1.mp4",
+            author=u1,
+            timestamp=now + timedelta(seconds=1),
+        )
+        p2 = Video(
+            filepath="videofromuser2.mp4",
+            author=u2,
+            timestamp=now + timedelta(seconds=4),
+        )
+        db.session.add_all([p1, p2])
+        db.session.commit()
+
+        u1.view(p1)
+        u1.like(p1)
+        u2.view(p1)
+        u2.like(p1)
+        u2.like(p1)
+        self.assertEqual(p1.view_count(), 2)
+        self.assertEqual(p1.like_count(), 2)
+        self.assertTrue(u1.has_viewed(p1))
+
+        u2.unlike(p1)
+        self.assertEqual(p1.like_count(), 1)
+
+        u2.view(p2)
+        self.assertEqual(p2.view_count(), 1)
 
 
 if __name__ == "__main__":

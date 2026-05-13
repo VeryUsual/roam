@@ -79,7 +79,7 @@ class User(UserMixin, db.Model):
 
     def avatar(self, size):
         if self.profile_picture is not None:
-            return "/pfp/" + self.profile_picture
+            return f"/pfp/{self.profile_picture}/{str(size)}"
         username = self.username.lower()
         return f"/avatar/{username}/{size}"
 
