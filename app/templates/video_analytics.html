@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0"></script>
+
+<style>
+    th {
+        padding: 15px;
+        text-align: left;
+    }
+
+    .statnumber {
+        font-size: large;
+    }
+</style>
+
+<h1>Engagement</h1>
+
+<table>
+    <tr>
+        <th>Video views<br><span class="statnumber">{{ video.view_count() }}</span></th>
+        <th>Likes<br><span class="statnumber">{{ video.like_count() }}</span></th>
+        <th>Comments<br><span class="statnumber">0</span></th>
+        <th>Shares<br><span class="statnumber">0</span></th>
+    </tr>
+</table>
+<br>
+
+{% if video.monthly_view_counts()[0]|length > 0 %}
+
+<h3 style="margin-bottom: 0; padding-bottom: 0;">Video views</h3>
+<p style="margin-top: 0; padding-top: 0; font-size: 12px;">May 12 - June 12</p>
+
+<canvas id="viewsBarGraph" style="width:70%;max-width:600px;max-height:25vh;"></canvas>
+<script>
+const viewsBarGraph = document.getElementById('viewsBarGraph');
+
+new Chart(viewsBarGraph, {
+  type: "bar",
+  data: {
+    labels: {{ video.monthly_view_counts()[0]|safe }},
+    datasets: [{
+      backgroundColor: "lightblue",
+      data: {{ video.monthly_view_counts()[1]|safe }}
+    }]
+  },
+  options: {
+    plugins: {
+      legend: {display: false}
+    }
+  }
+});
+</script>
+<br>
+
+<br><br><br>
+
+{% endif %}
+
+<h1>Followers</h1>
+
+<b style="font-size: larger;">{{ video.author.followers_count() }}</b> in total<br><br>
+<!--<canvas id="followersLineGraph" style="width:70%;max-width:600px;max-height:25vh;"></canvas>
+<script>
+const followersLineGraph = document.getElementById('followersLineGraph');
+
+new Chart(followersLineGraph, {
+  type: "line",
+  data: {
+    labels: ["May", "June", "July", "August", "September"],
+    datasets: [{
+      backgroundColor: "lightblue",
+      data: [55, 49, 44, 24, 15]
+    }]
+  },
+  options: {
+    plugins: {
+      legend: {display: false}
+    }
+  }
+});
+</script>-->
+
+<h1>Content</h1>
+<b style="font-size: larger; margin-bottom: 0; padding-bottom: 0;">12</b> posts
+<p style="margin-top: 0; padding-top: 0; font-size: 12px;">Last 7 days</p>
+
+{% for video in videos %}
+{% if video.description != "" %}
+{{video.description}}<br>
+{% endif %}
+{% endfor %}
+
+<br><br><br><br><br><br><br><br><br>
+
+{% endblock %}

@@ -7,6 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from app import login
 from hashlib import md5
+from collections import Counter
 
 @login.user_loader
 def load_user(id):
@@ -24,6 +25,14 @@ likes = sa.Table(
     db.metadata,
     sa.Column('liker_id', sa.Integer, sa.ForeignKey('user.id'), primary_key=True),
     sa.Column('video_id', sa.Integer, sa.ForeignKey('video.id'), primary_key=True)
+)
+
+views = sa.Table(
+    "views",
+    db.metadata,
+    sa.Column('viewer_id', sa.Integer, sa.ForeignKey('user.id'), primary_key=True),
+    sa.Column('video_id', sa.Integer, sa.ForeignKey('video.id'), primary_key=True),
+    sa.Column('datetime', sa.DateTime, default=lambda: datetime.now(timezone.utc))
 )
 
 class User(UserMixin, db.Model):
@@ -46,6 +55,12 @@ class User(UserMixin, db.Model):
         "Video",
         secondary=likes,
         back_populates="likers",
+        lazy="select"
+    )
+    viewed_videos: so.Mapped[list['Video']] = so.relationship(
+        "Video",
+        secondary=views,
+        back_populates="viewers",
         lazy="select"
     )
 
@@ -110,6 +125,16 @@ class User(UserMixin, db.Model):
     
     def likes_count(self) -> int:
         return len(self.liked_videos)
+    
+    def view(self, video: "Video"):
+        if not self.has_viewed(video):
+            self.viewed_videos.append(video)
+    
+    def has_viewed(self, video: "Video") -> bool:
+        return video in self.viewed_videos
+    
+    def view_count(self) -> int:
+        return len(self.viewed_videos)
 
 class Video(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -127,6 +152,12 @@ class Video(db.Model):
         back_populates="liked_videos",
         lazy="select"
     )
+    viewers: so.Mapped[list["User"]] = so.relationship(
+        "User",
+        secondary=views,
+        back_populates="viewed_videos",
+        lazy="select"
+    )
 
     def __repr__(self):
         return '<Video {}>'.format(self.filepath)
@@ -136,3 +167,22 @@ class Video(db.Model):
     
     def is_liked_by(self, user: "User") -> bool:
         return user in self.likers
+    
+    def view_count(self) -> int:
+        return len(self.viewers)
+    
+    def is_viewed_by(self, user: "User") -> bool:
+        return user in self.viewers
+    
+    def when_viewed(self) -> list[datetime]:
+        query = sa.select(views.c.datetime).where(views.c.video_id == self.id).order_by(views.c.datetime.desc())
+        rows = db.session.execute(query).scalars().all()
+        return list(rows)
+    
+    def monthly_view_counts(self):
+        times = self.when_viewed()
+        months = [t.astimezone(timezone.utc).strftime("%Y-%m") for t in times]
+        counts = Counter(months)
+        labels = sorted(counts.keys())
+        data = [counts[m] for m in labels]
+        return labels, data

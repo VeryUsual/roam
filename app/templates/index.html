@@ -26,6 +26,7 @@
         </p>
 
         {% if video.author == current_user %}
+        <a href="/videos/analytics/{{video.id}}">Video Analytics</a>
         {% elif not current_user.is_following(video.author) %}
         <p>
             <form action="{{ url_for('follow', username=video.author.username) }}" method="post">
@@ -42,7 +43,7 @@
         </p>
         {% endif %}
 
-        <p>{{ video.description | e | link_mentions | safe }}</p>
+        <p>{{ video.description | e | link_mentions | safe }}</p><br><br>
         <button style="float: left; font-size: xx-large;" onclick="window.location.href='/videos/closest/{{ video.id }}';">Stay</button>
         <button style="float: right; font-size: xx-large;" onclick="window.location.href='/videos/leave/{{ video.id }}';">Leave</button>
         <div id="map" style="position: absolute; top: 20vh; right: 5%; height: 50vh; width: 20vw;"></div>

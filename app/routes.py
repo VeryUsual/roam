@@ -55,6 +55,18 @@ def video(video_id):
     else:
         return render_template("404.html"), 404
 
+@app.route("/videos/analytics/<int:video_id>")
+@login_required
+def video_analytics(video_id):
+    query = sa.select(Video).where(Video.id == video_id)
+    video = db.session.scalar(query)
+
+    videos = db.session.scalars(current_user.videos.select())
+    if video.user_id == current_user.id:
+        return render_template("video_analytics.html", video=video, videos=videos)
+    else:
+        return "Unauthorized", 401
+
 @app.route("/videos/closest/<video_id>")
 @login_required
 def closest_video(video_id):
@@ -191,6 +203,7 @@ def register():
     return render_template('register.html', title='Register', form=form)
 
 @app.route("/logout")
+@login_required
 def logout():
     logout_user()
     return redirect(url_for('index'))
@@ -211,6 +224,7 @@ def edit_profile():
     return render_template('edit_profile.html', title='Edit Profile', form=form)
 
 @app.route('/user/<username>')
+@login_required
 def user(username):
     user = db.first_or_404(sa.select(User).where(User.username == username))
     videos = db.session.scalars(user.videos.select().order_by(Video.timestamp.desc())).all()
@@ -268,10 +282,15 @@ def unfollow(username):
 
 @app.route('/video_files/<name>')
 def videos_files(name):
-    print(name)
+    if current_user:
+        video = db.session.scalar(sa.select(Video).where(Video.filepath == "video_files/" + name))
+        if video is not None:
+            current_user.view(video)
+            db.session.commit()
     return send_from_directory(os.path.join(app.instance_path, 'videos'), name)
 
 @app.route('/search')
+@login_required
 def search():
     q = request.args.get("q")
     results = Video.query.filter(Video.description.ilike('%' + q + '%')).all()
