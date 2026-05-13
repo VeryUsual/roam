@@ -3,7 +3,11 @@
 {% block content %}
     <table>
         <tr valign="top">
+            {% if user.profile_picture == None %}
             <td><img src="{{ user.avatar(128) }}"></td>
+            {% else %}
+            <td><img src="/pfp/{{ user.profile_picture }}/128"></td>
+            {% endif %}
             <td>
                 <h1>{{ user.username }}</h1>
                 {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}

@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, request, send_from_directory, jsonify, make_response
+from flask import render_template, redirect, url_for, flash, request, send_from_directory, jsonify, make_response, send_file
 from flask_login import current_user, login_user, logout_user, login_required
 import sqlalchemy as sa
 from app import app, db
@@ -14,9 +14,12 @@ from werkzeug.utils import secure_filename
 import re
 import random
 import string
+from PIL import Image
+from io import BytesIO
 
 VIDEOS_FOLDER = "videos"
 ALLOWED_EXTENSIONS = {'mp4', 'mov', 'mkv', 'webm', 'ogv'}
+ALLOWED_PFP_FILE_EXTENSIONS = {"png", "jpg", "jpeg", "bmp", "webp", "svg", "gif"}
 
 def link_mentions(value):
     def repl(m):
@@ -28,6 +31,9 @@ app.jinja_env.filters["link_mentions"] = link_mentions
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def allowed_pfp_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_PFP_FILE_EXTENSIONS
 
 @app.before_request
 def before_request():
@@ -213,13 +219,20 @@ def logout():
 def edit_profile():
     form = EditProfileForm(current_user.username)
     if form.validate_on_submit():
-        current_user.username = form.username.data
-        current_user.about_me = form.about_me.data
-        db.session.commit()
-        flash('Your changes have been saved.')
-        return redirect(url_for('edit_profile'))
+        filename = ''.join(random.choices(string.ascii_letters + string.digits, k=14)) + secure_filename(form.profile_picture.data.filename)
+        print(filename)
+        if allowed_pfp_file(filename):
+            form.profile_picture.data.save(os.path.join(app.instance_path, 'profilepictures', filename))
+            current_user.about_me = form.about_me.data
+            current_user.profile_picture = filename
+            db.session.commit()
+            flash('Your changes have been saved.')
+            return redirect(url_for('edit_profile'))
+        else:
+            flash('Invalid profile picture file.')
+            return redirect(url_for('edit_profile'))
     elif request.method == 'GET':
-        form.username.data = current_user.username
+        #form.username.data = current_user.username
         form.about_me.data = current_user.about_me
     return render_template('edit_profile.html', title='Edit Profile', form=form)
 
@@ -288,6 +301,29 @@ def videos_files(name):
             current_user.view(video)
             db.session.commit()
     return send_from_directory(os.path.join(app.instance_path, 'videos'), name)
+
+@app.route('/pfp/<name>/<int:size>')
+def pfp(name, size):
+    pfp_path = os.path.join(app.instance_path, 'profilepictures', name)
+    if not pfp_path or not os.path.exists(pfp_path):
+        return "Not found", 404
+    
+    with Image.open(pfp_path) as img:
+        if img.mode not in ('RGB', 'RGBA'):
+            img = img.convert('RGB')
+        img.thumbnail((int(size), int(size)), Image.LANCZOS)
+
+        buf = BytesIO()
+        fmt = img.format if img.format else 'JPEG'
+        save_kwargs = {}
+        if fmt.upper() in ('JPEG', 'JPG'):
+            save_kwargs['quality'] = 70
+            save_kwargs['optimize'] = True
+        img.save(buf, format=fmt, **save_kwargs)
+        buf.seek(0)
+
+        mimetype = 'image/jpeg' if fmt.upper() in ('JPEG', 'JPG') else f'image/{fmt.lower()}'
+        return send_file(buf, mimetype=mimetype)
 
 @app.route('/search')
 @login_required

@@ -1,4 +1,5 @@
 roam.db
 instance/videos/*
+instance/profilepictures/*
 app/__pycache__
 __pycache__

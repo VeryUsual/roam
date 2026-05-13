@@ -29,7 +29,7 @@
 {% if video.monthly_view_counts()[0]|length > 0 %}
 
 <h3 style="margin-bottom: 0; padding-bottom: 0;">Video views</h3>
-<p style="margin-top: 0; padding-top: 0; font-size: 12px;">May 12 - June 12</p>
+<p style="margin-top: 0; padding-top: 0; font-size: 12px;">Monthly</p>
 
 <canvas id="viewsBarGraph" style="width:70%;max-width:600px;max-height:25vh;"></canvas>
 <script>
@@ -87,7 +87,7 @@ new Chart(followersLineGraph, {
 
 {% for video in videos %}
 {% if video.description != "" %}
-{{video.description}}<br>
+<a href="/videos/{{ video.id }}">{{video.description}}</a><br>
 {% endif %}
 {% endfor %}
 
