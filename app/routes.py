@@ -111,13 +111,7 @@ def index():
 @app.route("/videos/<int:video_id>")
 @login_required
 def video(video_id):
-    query = (
-        sa.select(Video)
-        .where(Video.id == video_id)
-        .where(
-            Video.privacy_level != 2
-        )
-    )
+    query = sa.select(Video).where(Video.id == video_id).where(Video.privacy_level != 2)
     videos = db.session.scalars(query).all()
     if len(videos) >= 1:
         form = EmptyForm()
@@ -168,13 +162,15 @@ def video_edit(video_id):
             video.privacy_level = form.privacy_level.data
             db.session.commit()
             flash("Changes successfully saved")
-            return redirect(url_for('video_edit', video_id=video_id))
+            return redirect(url_for("video_edit", video_id=video_id))
         elif request.method == "GET":
             form.coords.data = str(video.lat) + ", " + str(video.lon)
             form.description.data = video.description
             form.hashtags.data = video.hashtags
             form.privacy_level.data = video.privacy_level
-        return render_template("video_edit.html", title="Edit Video", video=video, form=form)
+        return render_template(
+            "video_edit.html", title="Edit Video", video=video, form=form
+        )
     else:
         return "Unauthorized", 401
 

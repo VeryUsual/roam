@@ -91,6 +91,7 @@ class SubmitVideoForm(FlaskForm):
     )
     submit = SubmitField("Submit")
 
+
 class EditVideoForm(FlaskForm):
     coords = TextAreaField("Enter GPS coords", validators=[DataRequired()])
     description = TextAreaField("Description")
