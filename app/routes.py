@@ -99,8 +99,10 @@ def before_request():
 
 
 @app.route("/")
-@login_required
 def index():
+    if not current_user.is_authenticated:
+        return redirect(url_for("welcome"))
+
     form = EmptyForm()
     videos = db.session.scalars(current_user.following_videos()).all()
     if len(videos) == 0:
