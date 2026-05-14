@@ -274,6 +274,7 @@ def upload():
                 description=form.description.data,
                 hashtags=form.hashtags.data,
                 privacy_level=form.privacy_level.data,
+                ip_address=request.remote_addr,
             )
             db.session.add(video)
             db.session.commit()
@@ -333,7 +334,7 @@ def register():
         return redirect(url_for("index"))
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(username=form.username.data)
+        user = User(username=form.username.data, ip_address=request.remote_addr)
         try:
             user.set_password(form.password.data)
         except Exception:
@@ -502,3 +503,16 @@ def avatar(username, size):
 @app.route("/static/<path:filename>")
 def static_files(filename):
     return send_from_directory("static", filename)
+
+
+@app.route("/modpanel")
+def modpanel():
+    if current_user.username != "admin":
+        return redirect(url_for("index"))
+    return render_template("moderator.html", title="Moderator Panel")
+
+@app.route("/modpanel/reports")
+def modpanel_reviewreports():
+    if current_user.username != "admin":
+        return redirect(url_for("index"))
+    return render_template("review_reports.html", title="Review Reports")

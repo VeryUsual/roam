@@ -70,6 +70,9 @@ class User(UserMixin, db.Model):
     viewed_videos: so.Mapped[list["Video"]] = so.relationship(
         "Video", secondary=views, back_populates="viewers", lazy="select"
     )
+    ip_address: so.Mapped[str] = so.mapped_column(
+        sa.String(48), server_default="", default=""
+    )
 
     def __repr__(self):
         return "<User {}>".format(self.username)
@@ -181,6 +184,9 @@ class Video(db.Model):
     privacy_level: so.Mapped[int] = so.mapped_column(
         server_default="0", default="0"
     )  # 0 is public, 1 is unlisted, and 2 is private
+    ip_address: so.Mapped[str] = so.mapped_column(
+        sa.String(48), server_default="", default=""
+    )
 
     def __repr__(self):
         return "<Video {}>".format(self.filepath)

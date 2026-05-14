@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Welcome, {{current_user.username}}!</h1>
+
+<a href="/modpanel/reports" style="font-size: larger;">Review User Reports</a>
+<br><br>
+<a href="/modpanel/punish" style="font-size: larger;">Issue a Punishment</a>
+
+{% endblock %}
