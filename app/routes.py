@@ -18,6 +18,7 @@ from app.forms import (
     EditProfileForm,
     EmptyForm,
     SubmitVideoForm,
+    EditVideoForm,
 )
 from app.models import User, Video
 from urllib.parse import urlsplit
@@ -114,9 +115,7 @@ def video(video_id):
         sa.select(Video)
         .where(Video.id == video_id)
         .where(
-            Video.privacy_level == 0
-            or Video.privacy_level == 1
-            or Video.privacy_level is None
+            Video.privacy_level != 2
         )
     )
     videos = db.session.scalars(query).all()
@@ -138,6 +137,44 @@ def video_analytics(video_id):
         return render_template(
             "video_analytics.html", title="Video Analytics", video=video, videos=videos
         )
+    else:
+        return "Unauthorized", 401
+
+
+@app.route("/myvideos")
+@login_required
+def myvideos():
+    videos = db.session.scalars(current_user.videos.select()).all()
+
+    if len(videos) > 0:
+        return render_template("myvideos.html", title="My Videos", videos=videos)
+    else:
+        return "No videos."
+
+
+@app.route("/videos/edit/<int:video_id>", methods=["GET", "POST"])
+@login_required
+def video_edit(video_id):
+    query = sa.select(Video).where(Video.id == video_id)
+    video = db.session.scalar(query)
+
+    if video.user_id == current_user.id:
+        form = EditVideoForm()
+        if form.validate_on_submit():
+            video.lat = form.coords.data.split(", ")[0]
+            video.lon = form.coords.data.split(", ")[1]
+            video.description = form.description.data
+            video.hashtags = form.hashtags.data
+            video.privacy_level = form.privacy_level.data
+            db.session.commit()
+            flash("Changes successfully saved")
+            return redirect(url_for('video_edit', video_id=video_id))
+        elif request.method == "GET":
+            form.coords.data = str(video.lat) + ", " + str(video.lon)
+            form.description.data = video.description
+            form.hashtags.data = video.hashtags
+            form.privacy_level.data = video.privacy_level
+        return render_template("video_edit.html", title="Edit Video", video=video, form=form)
     else:
         return "Unauthorized", 401
 

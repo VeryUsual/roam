@@ -90,3 +90,14 @@ class SubmitVideoForm(FlaskForm):
         validators=[DataRequired()],
     )
     submit = SubmitField("Submit")
+
+class EditVideoForm(FlaskForm):
+    coords = TextAreaField("Enter GPS coords", validators=[DataRequired()])
+    description = TextAreaField("Description")
+    hashtags = TextAreaField("Hashtags")
+    privacy_level = SelectField(
+        "Privacy Level",
+        choices=[(0, "Public"), (1, "Unlisted"), (2, "Private")],
+        validators=[DataRequired()],
+    )
+    submit = SubmitField("Submit")
