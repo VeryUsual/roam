@@ -111,7 +111,13 @@ def index():
 @login_required
 def video(video_id):
     query = (
-        sa.select(Video).where(Video.id == video_id).where(Video.privacy_level == 0 or Video.privacy_level == 1).order_by(Video.timestamp.desc())
+        sa.select(Video)
+        .where(Video.id == video_id)
+        .where(
+            Video.privacy_level == 0
+            or Video.privacy_level == 1
+            or Video.privacy_level is None
+        )
     )
     videos = db.session.scalars(query).all()
     if len(videos) >= 1:
@@ -229,6 +235,7 @@ def upload():
                 lon=lon,
                 description=form.description.data,
                 hashtags=form.hashtags.data,
+                privacy_level=form.privacy_level.data,
             )
             db.session.add(video)
             db.session.commit()
@@ -243,7 +250,11 @@ def upload():
 @app.route("/explore")
 @login_required
 def explore():
-    query = sa.select(Video).order_by(Video.timestamp.desc()).where(Video.privacy_level == 0)
+    query = (
+        sa.select(Video)
+        .order_by(Video.timestamp.desc())
+        .where(Video.privacy_level == 0)
+    )
     videos = db.session.scalars(query).all()
 
     if len(videos) == 0:

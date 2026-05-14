@@ -1,6 +1,13 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired, FileAllowed
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
+from wtforms import (
+    StringField,
+    PasswordField,
+    BooleanField,
+    SubmitField,
+    TextAreaField,
+    SelectField,
+)
 from wtforms.validators import DataRequired, ValidationError, EqualTo, Length
 import sqlalchemy as sa
 from app import db
@@ -77,4 +84,9 @@ class SubmitVideoForm(FlaskForm):
     coords = TextAreaField("Enter GPS coords", validators=[DataRequired()])
     description = TextAreaField("Description")
     hashtags = TextAreaField("Hashtags")
+    privacy_level = SelectField(
+        "Privacy Level",
+        choices=[(0, "Public"), (1, "Unlisted"), (2, "Private")],
+        validators=[DataRequired()],
+    )
     submit = SubmitField("Submit")
