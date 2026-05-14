@@ -5,8 +5,9 @@
 <h1>Welcome, {{current_user.username}}!</h1>
 
 <hr>
-<p>@a reported @b for harassment in the video "<a href>idk</a>"</p><a href>Issue Punishment</a><br><br><hr>
-<p>@a reported @b for harassment in the video "<a href>idk</a>"</p><a href>Issue Punishment</a><br><br><hr>
-<p>@a reported @b for harassment in the video "<a href>idk</a>"</p><a href>Issue Punishment</a><br><br><hr>
+{% for report in reports %}
+<p>Report ID {{report.id}}: @{{report.reporter.username}} reported <a href="/videos/{{report.video_id}}" target="_blank">this video</a> for "{{report.reason}}"</p>
+<a href="#" onClick="MyWindow=window.open('/modpanel/punish','Punish','width=1100,height=800'); return false;">Issue Punishment</a><br><br><hr>
+{% endfor %}
 
 {% endblock %}

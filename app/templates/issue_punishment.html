@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+    {% if form %}
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.user_id.label }}<br>
+            {{ form.user_id }}
+            {% for error in form.user_id.errors %}
+            <span style="color: red">{{ error }}</span>
+            {% endfor %}
+            <br><br>
+            {{ form.punishment.label }}<br>
+            {{ form.punishment }}
+            {% for error in form.punishment.errors %}
+            <span style="color: red">{{ error }}</span>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+    {% endif %}
+{% endblock %}

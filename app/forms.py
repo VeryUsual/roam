@@ -7,6 +7,7 @@ from wtforms import (
     SubmitField,
     TextAreaField,
     SelectField,
+    IntegerField,
 )
 from wtforms.validators import DataRequired, ValidationError, EqualTo, Length
 import sqlalchemy as sa
@@ -102,4 +103,22 @@ class EditVideoForm(FlaskForm):
         validators=[DataRequired()],
     )
     delete_checkbox = BooleanField("I would like to permanently delete my video.")
+    submit = SubmitField("Submit")
+
+
+class ReportVideoForm(FlaskForm):
+    reason = TextAreaField("Report reason: ")
+    submit = SubmitField("Submit Report")
+
+
+class IssuePunishmentForm(FlaskForm):
+    user_id = IntegerField(
+        "Who would you like to issue this punishment to? (User ID)",
+        validators=[DataRequired()],
+    )
+    punishment = SelectField(
+        "Select Punishment",
+        choices=[("ban", "Ban")],
+        validators=[DataRequired()],
+    )
     submit = SubmitField("Submit")

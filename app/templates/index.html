@@ -48,6 +48,13 @@
                 alert('Sharing API not supported in this browser :(');
             }
         }
+
+        window.report_video = async function() {
+            let toreport = confirm("Are you sure you want to report this video?");
+            if (toreport) {
+                window.location.href = "/videos/report/{{video.id}}";
+            }
+        }
     </script>
 
     <div class="container">
@@ -56,6 +63,7 @@
         <p style="float: right;">
             <button style="font-size: large;" onclick="like_video()" id="like_button">Like</button>
             <button style="font-size: large;" onclick="share_video()" id="share_button">Share</button>
+            <button style="font-size: large; color: red;" onclick="report_video()" id="report_button">Report</button>
         </p>
 
         {% if video.author == current_user %}

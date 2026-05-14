@@ -19,8 +19,10 @@ from app.forms import (
     EmptyForm,
     SubmitVideoForm,
     EditVideoForm,
+    ReportVideoForm,
+    IssuePunishmentForm,
 )
-from app.models import User, Video
+from app.models import User, Video, Report
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from math import radians
@@ -94,6 +96,10 @@ def allowed_pfp_file(filename):
 @app.before_request
 def before_request():
     if current_user.is_authenticated:
+        if current_user.banned:
+            logout_user()
+            return redirect(url_for("login"))
+
         current_user.last_seen = datetime.now(timezone.utc)
         db.session.commit()
 
@@ -322,6 +328,9 @@ def login():
         if user is None or not user.check_password(form.password.data):
             flash("Invalid username or password")
             return redirect(url_for("login"))
+        if user.banned:
+            flash("You have been banned from the platform for violating rules.")
+            return redirect(url_for("login"))
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get("next")
         if not next_page or urlsplit(next_page).netloc != "":
@@ -518,4 +527,46 @@ def modpanel():
 def modpanel_reviewreports():
     if current_user.username != "admin":
         return redirect(url_for("index"))
-    return render_template("review_reports.html", title="Review Reports")
+    reports = db.session.scalars(sa.select(Report)).all()
+    return render_template(
+        "review_reports.html", title="Review Reports", reports=reports
+    )
+
+
+@app.route("/videos/report/<int:video_id>", methods=["GET", "POST"])
+def report_video(video_id):
+    form = ReportVideoForm()
+    if form.validate_on_submit():
+        report = Report(
+            reason=form.reason.data, video_id=video_id, reporter=current_user
+        )
+        db.session.add(report)
+        db.session.commit()
+        flash("Report submitted!")
+        return redirect(url_for("report_video", video_id=video_id))
+    return render_template("report_video.html", form=form)
+
+
+@app.route("/modpanel/punish", methods=["GET", "POST"])
+def punish():
+    form = IssuePunishmentForm()
+    if form.validate_on_submit():
+        user = db.session.scalar(
+            sa.select(User).where(User.id == form.user_id.data)
+        )
+        if not user:
+            flash(f"No user with ID {form.user_id.data} found!")
+            return redirect(url_for("punish"))
+        if user == current_user:
+            flash("You can't punish yourself!")
+            return redirect(url_for("punish"))
+        if user.username == "admin":
+            flash("You can't ban the admin!")
+            return redirect(url_for("punish"))
+        if form.punishment.data == "ban":
+            user.banned = True
+            db.session.commit()
+            flash("User banned!")
+        return redirect(url_for("punish"))
+
+    return render_template("issue_punishment.html", form=form)

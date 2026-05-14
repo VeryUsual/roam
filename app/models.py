@@ -73,6 +73,8 @@ class User(UserMixin, db.Model):
     ip_address: so.Mapped[str] = so.mapped_column(
         sa.String(48), server_default="", default=""
     )
+    reports: so.Mapped[list["Report"]] = so.relationship(back_populates="reporter")
+    banned: so.Mapped[bool] = so.mapped_column(default=False, server_default="False")
 
     def __repr__(self):
         return "<User {}>".format(self.username)
@@ -219,3 +221,11 @@ class Video(db.Model):
         labels = sorted(counts.keys())
         data = [counts[m] for m in labels]
         return labels, data
+
+
+class Report(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    reason: so.Mapped[str] = so.mapped_column(sa.String(1000), default="")
+    video_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey("video.id"))
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id), index=True)
+    reporter: so.Mapped[User] = so.relationship(back_populates="reports")
