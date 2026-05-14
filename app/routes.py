@@ -48,7 +48,10 @@ class RoamAdminModelView(ModelView):
     can_export = True
 
     def is_accessible(self):
-        return current_user.username == "admin"
+        if current_user.is_authenticated:
+            return current_user.username == "admin" or current_user.role >= 2
+        else:
+            return False
 
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for("login", next=request.url))
@@ -62,9 +65,21 @@ class RoamAdminUserModelView(RoamAdminModelView):
 
     column_list = ["username", "about_me", "last_seen", "profile_picture"]
 
+    form_excluded_columns = [
+        "password",
+        "videos",
+        "following",
+        "followers",
+        "liked_videos",
+        "viewed_videos",
+        "reports",
+    ]
+
+class RoamAdminVideoModelView(RoamAdminModelView):
+    form_excluded_columns = ["author", "likers", "viewers"]
 
 admin.add_view(RoamAdminUserModelView(User, db.session))
-admin.add_view(RoamAdminModelView(Video, db.session))
+admin.add_view(RoamAdminVideoModelView(Video, db.session))
 
 VIDEOS_FOLDER = "videos"
 ALLOWED_EXTENSIONS = {"mp4", "mov", "mkv", "webm", "ogv"}
@@ -518,14 +533,14 @@ def static_files(filename):
 
 @app.route("/modpanel")
 def modpanel():
-    if current_user.username != "admin":
+    if current_user.username != "admin" and current_user.role < 1:
         return redirect(url_for("index"))
     return render_template("moderator.html", title="Moderator Panel")
 
 
 @app.route("/modpanel/reports")
 def modpanel_reviewreports():
-    if current_user.username != "admin":
+    if current_user.username != "admin" and current_user.role < 1:
         return redirect(url_for("index"))
     reports = db.session.scalars(sa.select(Report)).all()
     return render_template(
@@ -551,9 +566,7 @@ def report_video(video_id):
 def punish():
     form = IssuePunishmentForm()
     if form.validate_on_submit():
-        user = db.session.scalar(
-            sa.select(User).where(User.id == form.user_id.data)
-        )
+        user = db.session.scalar(sa.select(User).where(User.id == form.user_id.data))
         if not user:
             flash(f"No user with ID {form.user_id.data} found!")
             return redirect(url_for("punish"))
@@ -564,6 +577,9 @@ def punish():
             flash("You can't ban the admin!")
             return redirect(url_for("punish"))
         if form.punishment.data == "ban":
+            if user.banned:
+                flash("User already banned!")
+                return redirect(url_for("punish"))
             user.banned = True
             db.session.commit()
             flash("User banned!")

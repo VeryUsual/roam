@@ -75,6 +75,9 @@ class User(UserMixin, db.Model):
     )
     reports: so.Mapped[list["Report"]] = so.relationship(back_populates="reporter")
     banned: so.Mapped[bool] = so.mapped_column(default=False, server_default="False")
+    role: so.Mapped[int] = so.mapped_column(
+        server_default="0", default="0"
+    )  # 0 is normal, 1 is moderator, 2 is admin
 
     def __repr__(self):
         return "<User {}>".format(self.username)

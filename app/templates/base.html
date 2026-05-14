@@ -48,9 +48,11 @@
       <a href="{{ url_for('index') }}">Home</a>
       <a href="{{ url_for('explore') }}">Explore</a>
       <a href="{{ url_for('upload') }}">Upload</a>
-      {% if current_user.username == 'admin' %}
+      {% if not current_user.is_anonymous %}
+      {% if current_user.username == 'admin' or current_user.role >= 1 %}
       <a href="{{ url_for('admin.index') }}">Admin</a>
       <a href="{{ url_for('modpanel') }}">Moderator Panel</a>
+      {% endif %}
       {% endif %}
       <input type="text" placeholder="Search" style="font-size: 17px; padding: 14px 16px; width: 30%; margin-left: 5%;" name="q" form="searchform" required>
       {% if current_user.is_anonymous %}
