@@ -164,19 +164,19 @@ class VideoModelCase(unittest.TestCase):
             filepath="video1.mp4",
             author=u2,
             timestamp=now + timedelta(seconds=1),
-            privacy_level=0
+            privacy_level=0,
         )
         p2 = Video(
             filepath="video2.mp4",
             author=u2,
             timestamp=now + timedelta(seconds=4),
-            privacy_level=1
+            privacy_level=1,
         )
         p3 = Video(
             filepath="video3.mp4",
             author=u2,
             timestamp=now + timedelta(seconds=4),
-            privacy_level=2
+            privacy_level=2,
         )
         db.session.add_all([p1, p2, p3])
         db.session.commit()
@@ -185,6 +185,7 @@ class VideoModelCase(unittest.TestCase):
         self.assertEqual(len(db.session.scalars(u1.following_videos()).all()), 1)
         p2.privacy_level = 0
         self.assertEqual(len(db.session.scalars(u1.following_videos()).all()), 2)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
