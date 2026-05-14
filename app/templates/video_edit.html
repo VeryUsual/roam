@@ -30,8 +30,32 @@
             {% for error in form.privacy_level.errors %}
             <span style="color: red">{{ error }}</span>
             {% endfor %}
+            <br><br>
+            {{ form.delete_checkbox.label }}
+            {{ form.delete_checkbox }}
+            {% for error in form.delete_checkbox.errors %}
+            <span style="color: red">{{ error }}</span>
+            {% endfor %}
         </p>
         <p>{{ form.submit() }}</p>
     </form>
+    <script src="https://cdn.jsdelivr.net/npm/@simondmc/popup-js@1.4.4/popup.min.js"></script>
+    <script>
+        document.getElementById("delete_checkbox").checked = false;
+
+        window.preventVideoDeletion = true;
+        document.getElementById("delete_checkbox").addEventListener('click', (e) => {
+            if (window.preventVideoDeletion == true) {
+                e.preventDefault();
+                const areyousurepopup = new Popup({
+                    id: "areyousurepopup",
+                    title: "Are you sure?",
+                    content: `
+                        You have selected the option to permanently and irreversibly delete your video forever.<br><br><br><hr><br><button onclick=\"window.preventVideoDeletion = false;alert('You may now close this window and tick the checkbox');\">I am aware of all the consequences and I would like to delete my video.</button>`,
+                });
+                areyousurepopup.show();
+            }
+        });
+    </script>
     {% endif %}
 {% endblock %}

@@ -155,6 +155,11 @@ def video_edit(video_id):
     if video.user_id == current_user.id:
         form = EditVideoForm()
         if form.validate_on_submit():
+            if form.delete_checkbox.data:
+                db.session.delete(video)
+                db.session.commit()
+                flash("Successfully deleted your video.")
+                return redirect(url_for("index"))
             video.lat = form.coords.data.split(", ")[0]
             video.lon = form.coords.data.split(", ")[1]
             video.description = form.description.data

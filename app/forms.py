@@ -101,4 +101,5 @@ class EditVideoForm(FlaskForm):
         choices=[(0, "Public"), (1, "Unlisted"), (2, "Private")],
         validators=[DataRequired()],
     )
+    delete_checkbox = BooleanField("I would like to permanently delete my video.")
     submit = SubmitField("Submit")
