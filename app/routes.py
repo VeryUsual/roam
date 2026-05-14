@@ -513,6 +513,7 @@ def modpanel():
         return redirect(url_for("index"))
     return render_template("moderator.html", title="Moderator Panel")
 
+
 @app.route("/modpanel/reports")
 def modpanel_reviewreports():
     if current_user.username != "admin":
