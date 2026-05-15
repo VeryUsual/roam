@@ -156,7 +156,10 @@ def video_analytics(video_id):
     if video:
         if video.user_id == current_user.id:
             return render_template(
-                "video_analytics.html", title="Video Analytics", video=video, videos=videos
+                "video_analytics.html",
+                title="Video Analytics",
+                video=video,
+                videos=videos,
             )
         else:
             return "Unauthorized", 401

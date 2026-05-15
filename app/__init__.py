@@ -15,8 +15,12 @@ migrate = Migrate(app, db)
 login = LoginManager(app)
 login.login_view = "login"
 moment = Moment(app)
-htmlmin = HTMLMIN(app, remove_comments=False, remove_empty_space=True, disable_css_min=False)
-dashboard.config.init_from(file=os.path.join(os.getcwd(), 'flaskmonitoringdashboard_config.cfg'))
+htmlmin = HTMLMIN(
+    app, remove_comments=False, remove_empty_space=True, disable_css_min=False
+)
+dashboard.config.init_from(
+    file=os.path.join(os.getcwd(), "flaskmonitoringdashboard_config.cfg")
+)
 
 from app import routes, models, errors
 
