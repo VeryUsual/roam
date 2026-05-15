@@ -7,3 +7,5 @@ flask-moment
 avatar-generator
 flask-admin[sqlalchemy,images,export]
 password-strength
+Flask-HTMLmin
+flask_monitoringdashboard

@@ -153,12 +153,14 @@ def video_analytics(video_id):
     video = db.session.scalar(query)
 
     videos = db.session.scalars(current_user.videos.select())
-    if video.user_id == current_user.id:
-        return render_template(
-            "video_analytics.html", title="Video Analytics", video=video, videos=videos
-        )
-    else:
-        return "Unauthorized", 401
+    if video:
+        if video.user_id == current_user.id:
+            return render_template(
+                "video_analytics.html", title="Video Analytics", video=video, videos=videos
+            )
+        else:
+            return "Unauthorized", 401
+    return "Not found", 404
 
 
 @app.route("/myvideos")
@@ -178,32 +180,35 @@ def video_edit(video_id):
     query = sa.select(Video).where(Video.id == video_id)
     video = db.session.scalar(query)
 
-    if video.user_id == current_user.id:
-        form = EditVideoForm()
-        if form.validate_on_submit():
-            if form.delete_checkbox.data:
-                db.session.delete(video)
+    if video:
+        if video.user_id == current_user.id:
+            form = EditVideoForm()
+            if form.validate_on_submit():
+                if form.delete_checkbox.data:
+                    db.session.delete(video)
+                    db.session.commit()
+                    flash("Successfully deleted your video.")
+                    return redirect(url_for("index"))
+                video.lat = form.coords.data.split(", ")[0]
+                video.lon = form.coords.data.split(", ")[1]
+                video.description = form.description.data
+                video.hashtags = form.hashtags.data
+                video.privacy_level = form.privacy_level.data
                 db.session.commit()
-                flash("Successfully deleted your video.")
-                return redirect(url_for("index"))
-            video.lat = form.coords.data.split(", ")[0]
-            video.lon = form.coords.data.split(", ")[1]
-            video.description = form.description.data
-            video.hashtags = form.hashtags.data
-            video.privacy_level = form.privacy_level.data
-            db.session.commit()
-            flash("Changes successfully saved")
-            return redirect(url_for("video_edit", video_id=video_id))
-        elif request.method == "GET":
-            form.coords.data = str(video.lat) + ", " + str(video.lon)
-            form.description.data = video.description
-            form.hashtags.data = video.hashtags
-            form.privacy_level.data = video.privacy_level
-        return render_template(
-            "video_edit.html", title="Edit Video", video=video, form=form
-        )
+                flash("Changes successfully saved")
+                return redirect(url_for("video_edit", video_id=video_id))
+            elif request.method == "GET":
+                form.coords.data = str(video.lat) + ", " + str(video.lon)
+                form.description.data = video.description
+                form.hashtags.data = video.hashtags
+                form.privacy_level.data = video.privacy_level
+            return render_template(
+                "video_edit.html", title="Edit Video", video=video, form=form
+            )
+        else:
+            return "Unauthorized", 401
     else:
-        return "Unauthorized", 401
+        return "Not found", 404
 
 
 @app.route("/videos/closest/<video_id>")

@@ -3,3 +3,4 @@ instance/videos/*
 instance/profilepictures/*
 app/__pycache__
 __pycache__
+flask_monitoringdashboard.db
