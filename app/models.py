@@ -78,6 +78,9 @@ class User(UserMixin, db.Model):
     role: so.Mapped[int] = so.mapped_column(
         server_default="0", default="0"
     )  # 0 is normal, 1 is moderator, 2 is admin
+    saved_videos: so.Mapped[list["SavedVideos"]] = so.relationship(
+        back_populates="user"
+    )
 
     def __repr__(self):
         return "<User {}>".format(self.username)
@@ -163,6 +166,17 @@ class User(UserMixin, db.Model):
     def view_count(self) -> int:
         return len(self.viewed_videos)
 
+    def save(self, video: "Video"):
+        if not self.has_saved(video):
+            self.saved_videos.append(video)
+
+    def unsave(self, video: "Video"):
+        if self.has_saved(video):
+            self.saved_videos.remove(video)
+
+    def has_saved(self, video: "Video") -> bool:
+        return video in self.saved_videos
+
 
 class Video(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -193,6 +207,7 @@ class Video(db.Model):
         sa.String(48), server_default="", default=""
     )
     reports: so.Mapped[list["Report"]] = so.relationship(back_populates="video")
+    savers: so.Mapped[list["SavedVideos"]] = so.relationship(back_populates="video")
 
     def __repr__(self):
         return "<Video {}>".format(self.filepath)
@@ -234,3 +249,12 @@ class Report(db.Model):
     user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id), index=True)
     reporter: so.Mapped[User] = so.relationship(back_populates="reports")
     video: so.Mapped[Video] = so.relationship(back_populates="reports")
+
+
+class SavedVideos(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id), index=True)
+    video_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey("video.id"))
+    folder: so.Mapped[str] = so.mapped_column(sa.String(300), default="")
+    user: so.Mapped[list["User"]] = so.relationship(back_populates="saved_videos")
+    video: so.Mapped[list["Video"]] = so.relationship(back_populates="savers")

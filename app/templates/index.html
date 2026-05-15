@@ -42,6 +42,34 @@
             xhttp.send();
         }
 
+        window.save_video = async function() {
+            if (document.getElementById("save_button").innerText == "Save") {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        if (this.responseText == "Success") {
+                            document.getElementById("save_button").disabled = true;
+                            is_saved();
+                        }
+                    }
+                };
+                xhttp.open("POST", "/api/save/{{video.id}}", true);
+                xhttp.send();
+            } else if (document.getElementById("save_button").innerText == "Unsave") {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        if (this.responseText == "Success") {
+                            document.getElementById("save_button").disabled = true;
+                            is_saved();
+                        }
+                    }
+                };
+                xhttp.open("POST", "/api/unsave/{{video.id}}", true);
+                xhttp.send();
+            }
+        }
+
         window.share_video = async function() {
             if (navigator.share) {
                 try {
@@ -64,6 +92,24 @@
                 window.location.href = "/videos/report/{{video.id}}";
             }
         }
+        
+        function is_saved() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    if (this.responseText == "Saved") {
+                        document.getElementById("save_button").innerText = "Unsave";
+                        document.getElementById("save_button").disabled = false;
+                    } else {
+                        document.getElementById("save_button").innerText = "Save";
+                        document.getElementById("save_button").disabled = false;
+                    }
+                }
+            };
+            xhttp.open("POST", "/api/is_saved/{{video.id}}", true);
+            xhttp.send();
+        }
+        is_saved();
     </script>
 
     <div class="container">
@@ -72,6 +118,7 @@
         <p style="float: right;">
             <button style="font-size: large;" onclick="like_video()" id="like_button">Like</button>
             <button style="font-size: large;" onclick="share_video()" id="share_button">Share</button>
+            <button style="font-size: large;" onclick="save_video()" id="save_button">Save</button>
             <button style="font-size: large; color: red;" onclick="report_video()" id="report_button">Report</button>
         </p>
 

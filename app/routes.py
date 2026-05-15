@@ -22,7 +22,7 @@ from app.forms import (
     ReportVideoForm,
     IssuePunishmentForm,
 )
-from app.models import User, Video, Report
+from app.models import User, Video, Report, SavedVideos
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from math import radians
@@ -46,6 +46,7 @@ with app.app_context():
 
 class RoamAdminModelView(ModelView):
     can_export = True
+    action_disallowed_list = ["delete"]
 
     def is_accessible(self):
         if current_user.is_authenticated:
@@ -75,8 +76,10 @@ class RoamAdminUserModelView(RoamAdminModelView):
         "reports",
     ]
 
+
 class RoamAdminVideoModelView(RoamAdminModelView):
     form_excluded_columns = ["author", "likers", "viewers"]
+
 
 admin.add_view(RoamAdminUserModelView(User, db.session))
 admin.add_view(RoamAdminVideoModelView(Video, db.session))
@@ -284,7 +287,7 @@ def upload():
             if len(form.coords.data.split(", ")) != 2:
                 flash("Invalid coords")
                 return redirect(url_for("upload"))
-            
+
             if form.hashtags.data != "":
                 for word in form.hashtags.data.split():
                     if not word.startswith("#"):
@@ -461,6 +464,53 @@ def like(video_id):
     return "Success"
 
 
+@app.route("/api/save/<video_id>", methods=["POST"])
+@login_required
+def save(video_id):
+    video = db.session.scalar(sa.select(Video).where(Video.id == video_id))
+    if video is None:
+        return "Video not found"
+    savedvideo = SavedVideos(
+        user=current_user, user_id=current_user.id, video_id=video_id, video=video
+    )
+    db.session.add(savedvideo)
+    db.session.commit()
+    return "Success"
+
+
+@app.route("/api/unsave/<video_id>", methods=["POST"])
+@login_required
+def unsave(video_id):
+    video = db.session.scalar(sa.select(Video).where(Video.id == video_id))
+    if video is None:
+        return "Video not found"
+    videosave = db.session.scalar(
+        sa.select(SavedVideos).where(
+            SavedVideos.user == current_user and SavedVideos.video == video
+        )
+    )
+    db.session.delete(videosave)
+    db.session.commit()
+    return "Success"
+
+
+@app.route("/api/is_saved/<video_id>", methods=["POST"])
+@login_required
+def is_saved(video_id):
+    video = db.session.scalar(sa.select(Video).where(Video.id == video_id))
+    if video is None:
+        return "Video not found", 404
+    videosave = db.session.scalar(
+        sa.select(SavedVideos).where(
+            SavedVideos.user == current_user and SavedVideos.video == video
+        )
+    )
+    if videosave is not None:
+        return "Saved", 200
+    else:
+        return "Not Saved", 200
+
+
 @app.route("/unfollow/<username>", methods=["POST"])
 @login_required
 def unfollow(username):
@@ -548,6 +598,7 @@ def modpanel():
 
 
 @app.route("/modpanel/reports")
+@login_required
 def modpanel_reviewreports():
     if current_user.username != "admin" and current_user.role < 1:
         return redirect(url_for("index"))
@@ -558,6 +609,7 @@ def modpanel_reviewreports():
 
 
 @app.route("/videos/report/<int:video_id>", methods=["GET", "POST"])
+@login_required
 def report_video(video_id):
     form = ReportVideoForm()
     if form.validate_on_submit():
@@ -572,7 +624,10 @@ def report_video(video_id):
 
 
 @app.route("/api/moderator/report/remove/<int:report_id>")
+@login_required
 def remove_report(report_id):
+    if current_user.username != "admin" and current_user.role < 1:
+        return "Unauthorized", 401
     report = db.session.scalar(sa.select(Report).where(Report.id == report_id))
     if report is None:
         return "No report", 400
@@ -580,7 +635,9 @@ def remove_report(report_id):
     db.session.commit()
     return "Success"
 
+
 @app.route("/modpanel/punish", methods=["GET", "POST"])
+@login_required
 def punish():
     form = IssuePunishmentForm()
     if form.validate_on_submit():
@@ -604,3 +661,14 @@ def punish():
         return redirect(url_for("punish"))
 
     return render_template("issue_punishment.html", form=form)
+
+
+@app.route("/videos/saved")
+@login_required
+def saved_videos_route():
+    savedvideos = db.session.scalars(
+        sa.select(SavedVideos).where(SavedVideos.user_id == current_user.id)
+    ).all()
+    return render_template(
+        "saved_videos.html", title="Saved Videos", videos=savedvideos
+    )

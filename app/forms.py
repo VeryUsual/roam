@@ -82,9 +82,15 @@ class SubmitVideoForm(FlaskForm):
         ],
         render_kw={"accept": ".mp4,.mov,.mkv,.webm,.ogv"},
     )
-    coords = TextAreaField("Enter GPS coords", validators=[DataRequired()], render_kw={"placeholder": "48.856, 2.352"})
+    coords = TextAreaField(
+        "Enter GPS coords",
+        validators=[DataRequired()],
+        render_kw={"placeholder": "48.856, 2.352"},
+    )
     description = TextAreaField("Description")
-    hashtags = TextAreaField("Hashtags", render_kw={"placeholder": "#food #funny #cool"})
+    hashtags = TextAreaField(
+        "Hashtags", render_kw={"placeholder": "#food #funny #cool"}
+    )
     privacy_level = SelectField(
         "Privacy Level",
         choices=[(0, "Public"), (1, "Unlisted"), (2, "Private")],
