@@ -5,9 +5,25 @@
 <h1>Welcome, {{current_user.username}}!</h1>
 
 <hr>
+{% if reports|length == 0 %}<br>No reports, yet!{% endif %}
 {% for report in reports %}
-<p>Report ID {{report.id}}: @{{report.reporter.username}} reported <a href="/videos/{{report.video_id}}" target="_blank">this video</a> for "{{report.reason}}"</p>
-<a href="#" onClick="MyWindow=window.open('/modpanel/punish','Punish','width=1100,height=800'); return false;">Issue Punishment</a><br><br><hr>
+<p>Report ID {{report.id}}: <a href="/user/{{report.reporter.username}}">@{{report.reporter.username}}</a> reported <a href="/videos/{{report.video_id}}" target="_blank">this video</a> (Creator: <a href="/user/{{report.video.author.username}}">ID {{report.user_id}}</a>) for "{{report.reason}}"</p>
+<a href="#" onClick="MyWindow=window.open('/modpanel/punish','Punish','width=1100,height=800'); return false;">Issue Punishment</a>
+<a href="#" onClick="removeReport({{report.id}})">Remove Report</a>
+<br><br><hr>
 {% endfor %}
+
+<script>
+    function removeReport(report_id) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                window.location.reload();
+            }
+        };
+        xhttp.open("GET", "/api/moderator/report/remove/" + report_id.toString(), true);
+        xhttp.send();
+    }
+</script>
 
 {% endblock %}

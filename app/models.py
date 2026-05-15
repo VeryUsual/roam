@@ -192,6 +192,7 @@ class Video(db.Model):
     ip_address: so.Mapped[str] = so.mapped_column(
         sa.String(48), server_default="", default=""
     )
+    reports: so.Mapped[list["Report"]] = so.relationship(back_populates="video")
 
     def __repr__(self):
         return "<Video {}>".format(self.filepath)
@@ -232,3 +233,4 @@ class Report(db.Model):
     video_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey("video.id"))
     user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id), index=True)
     reporter: so.Mapped[User] = so.relationship(back_populates="reports")
+    video: so.Mapped[Video] = so.relationship(back_populates="reports")

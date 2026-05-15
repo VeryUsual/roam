@@ -284,6 +284,15 @@ def upload():
             if len(form.coords.data.split(", ")) != 2:
                 flash("Invalid coords")
                 return redirect(url_for("upload"))
+            
+            if form.hashtags.data != "":
+                for word in form.hashtags.data.split():
+                    if not word.startswith("#"):
+                        flash("Invalid hashtags")
+                        return redirect(url_for("upload"))
+                    if ">" in word or "<" in word:
+                        flash("Invalid hashtags")
+                        return redirect(url_for("upload"))
 
             form.video.data.save(os.path.join(app.instance_path, "videos", filename))
 
@@ -561,6 +570,15 @@ def report_video(video_id):
         return redirect(url_for("report_video", video_id=video_id))
     return render_template("report_video.html", form=form)
 
+
+@app.route("/api/moderator/report/remove/<int:report_id>")
+def remove_report(report_id):
+    report = db.session.scalar(sa.select(Report).where(Report.id == report_id))
+    if report is None:
+        return "No report", 400
+    db.session.delete(report)
+    db.session.commit()
+    return "Success"
 
 @app.route("/modpanel/punish", methods=["GET", "POST"])
 def punish():
