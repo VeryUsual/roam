@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .message-box {
+        border-color: black;
+        border-width: 2px;
+        border-style: solid;
+        border-radius: 10px;
+        background-color: whitesmoke;
+        height: 80vh;
+        display: flex;
+        flex-direction: column;
+        width: 80vw;
+        align-items: stretch;
+    }
+
+    .messages {
+        overflow-y: scroll;
+        flex: 1;
+        width: 100%;
+    }
+
+    .input {
+        padding: 10px;
+        display: flex;
+    }
+
+    h2 {
+        text-align: center;
+    }
+
+    #message {
+        flex: 1;
+    }
+
+    .text {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .muted {
+        color: grey;
+        font-size: 10px;
+    }
+</style>
+
+<div class="message-box">
+    <h2>{{username}}</h2>
+    <div class="messages" id="messages"></div>
+    <div class="input">
+        <input type="text" rows="3" placeholder="Message" name="message" id="message">
+        <button type="button" name="send" id="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+    var socketio = io({
+        query: {
+            room: "{{room}}"
+        }
+    });
+
+    const createMessage = (name, msg) => {
+        const messages = document.getElementById("messages");
+        content = `
+        <div class="text">
+            <span>
+                <strong>${name}</strong>: ${msg}
+            </span>
+            <span class="muted">
+                ${new Date().toLocaleString()}
+            </span>
+        </div>
+        `
+        messages.innerHTML += content;
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    socketio.on("message", (data) => {
+        createMessage(data.name, data.message);
+    });
+
+    const sendMessage = () => {
+        const message = document.getElementById("message");
+        if (message.value == "") return;
+        socketio.emit("message", {data: message.value, room: "{{room}}"});
+        message.value = "";
+    }
+
+    const input = document.getElementsByClassName("input")[0];
+    input.addEventListener("keyup", function(event) {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    });
+</script>
+
+{% for msg in messages %}
+<script>
+    createMessage("{{msg.name}}", "{{msg.message}}");
+</script>
+{% endfor %}
+
+{% endblock %}

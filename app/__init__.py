@@ -7,6 +7,7 @@ from flask_moment import Moment
 from flask_htmlmin import HTMLMIN
 import flask_monitoringdashboard as dashboard
 import os
+from flask_socketio import SocketIO
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -18,6 +19,7 @@ moment = Moment(app)
 htmlmin = HTMLMIN(
     app, remove_comments=False, remove_empty_space=True, disable_css_min=False
 )
+
 dashboard.config.init_from(
     file=os.path.join(os.getcwd(), "flaskmonitoringdashboard_config.cfg")
 )

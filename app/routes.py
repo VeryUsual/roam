@@ -37,12 +37,15 @@ from PIL import Image
 from io import BytesIO
 from flask_admin.contrib.sqla import ModelView
 from flask_admin import Admin
+from flask_socketio import join_room, leave_room, send, SocketIO, emit
 
 admin = Admin(app, name="Roam Admin Panel")
+socketio = SocketIO(app)
 
 with app.app_context():
     db.create_all()
 
+dms = {}
 
 class RoamAdminModelView(ModelView):
     can_export = True
@@ -141,6 +144,8 @@ def video(video_id):
     videos = db.session.scalars(query).all()
     if len(videos) >= 1:
         form = EmptyForm()
+        if videos[0].draft and current_user != videos[0].author:
+            return "Unauthorized", 401
         return render_template("index.html", videos=videos, form=form)
     else:
         return render_template("404.html"), 404
@@ -197,6 +202,7 @@ def video_edit(video_id):
                 video.description = form.description.data
                 video.hashtags = form.hashtags.data
                 video.privacy_level = form.privacy_level.data
+                video.draft = form.draft.data
                 db.session.commit()
                 flash("Changes successfully saved")
                 return redirect(url_for("video_edit", video_id=video_id))
@@ -205,6 +211,7 @@ def video_edit(video_id):
                 form.description.data = video.description
                 form.hashtags.data = video.hashtags
                 form.privacy_level.data = video.privacy_level
+                form.draft.data = video.draft
             return render_template(
                 "video_edit.html", title="Edit Video", video=video, form=form
             )
@@ -290,7 +297,6 @@ def upload():
         filename = "".join(
             random.choices(string.ascii_letters + string.digits, k=14)
         ) + secure_filename(form.video.data.filename)
-        print(filename)
         if allowed_file(filename):
             if len(form.coords.data.split(", ")) != 2:
                 flash("Invalid coords")
@@ -336,6 +342,7 @@ def explore():
         sa.select(Video)
         .order_by(Video.timestamp.desc())
         .where(Video.privacy_level == 0)
+        .where(not Video.draft)
     )
     videos = db.session.scalars(query).all()
 
@@ -410,7 +417,6 @@ def edit_profile():
             filename = "".join(
                 random.choices(string.ascii_letters + string.digits, k=14)
             ) + secure_filename(form.profile_picture.data.filename)
-            print(filename)
             if allowed_pfp_file(filename):
                 form.profile_picture.data.save(
                     os.path.join(app.instance_path, "profilepictures", filename)
@@ -680,3 +686,56 @@ def saved_videos_route():
     return render_template(
         "saved_videos.html", title="Saved Videos", videos=savedvideos
     )
+
+def dm_room_string(user1, user2):
+    return "&".join(sorted([str(user1), str(user2)]))
+
+@app.route("/chat", methods=["GET", "POST"])
+def chat():
+    if request.method == "POST":
+        username = request.form.get("username")
+
+        if not username:
+            return render_template("chat.html", error="Invalid username")
+        
+        dms[dm_room_string(username, current_user.username)] = {"messages": []}
+
+        return redirect(url_for("dm", username=username))
+
+    return render_template("chat.html")
+
+@app.route("/dm/<username>")
+def dm(username):
+    if username is None or dm_room_string(username, current_user.username) not in dms:
+        return redirect(url_for("chat"))
+    
+    messages = dms[dm_room_string(username, current_user.username)]["messages"]
+
+    return render_template("dm.html", username=username, room=dm_room_string(username, current_user.username), messages=messages)
+
+@socketio.on("message")
+def message(data):
+    data["room"] = data["room"].replace("&amp;", "&")
+
+    if data["room"] not in dms:
+        return
+    
+    content = {
+        "name": current_user.username,
+        "message": data["data"]
+    }
+
+    dms[data["room"]]["messages"].append(content)
+    emit("message", content, room=data["room"].replace("&", "&amp;"))
+
+@socketio.on("connect")
+def connect():
+    room = request.args.get("room")
+    if room:
+        join_room(room)
+
+@socketio.on("disconnect")
+def disconnect():
+    room = request.args.get("room")
+    if room:
+        leave_room(room)

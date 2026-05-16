@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    input {
+        width: 100%;
+    }
+
+    .msgbtn {
+        width: 100%;
+    }
+</style>
+<form method="post">
+    <h3>DM anyone</h3>
+    <div>
+        <input type="text" placeholder="Username of user you want to DM" name="username">
+        <button type="submit" class="msgbtn">Message</button>
+    </div>
+    {% if error %} {{error}} {% endif %}
+</form>
+{% endblock %}

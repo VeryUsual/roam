@@ -138,6 +138,7 @@ class User(UserMixin, db.Model):
                 )
             )
             .where(Video.privacy_level == 0)
+            .where(not Video.draft)
             .group_by(Video)
             .order_by(Video.timestamp.desc())
         )
@@ -208,6 +209,9 @@ class Video(db.Model):
     )
     reports: so.Mapped[list["Report"]] = so.relationship(back_populates="video")
     savers: so.Mapped[list["SavedVideos"]] = so.relationship(back_populates="video")
+    draft: so.Mapped[bool] = so.mapped_column(
+        sa.Boolean, nullable=False, server_default="False", default=False
+    )
 
     def __repr__(self):
         return "<Video {}>".format(self.filepath)

@@ -42,6 +42,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
      crossorigin=""></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
   </head>
   <body>
     <div class="topnav">
@@ -49,6 +50,7 @@
       <a href="{{ url_for('explore') }}">Explore</a>
       <a href="{{ url_for('upload') }}">Upload</a>
       {% if not current_user.is_anonymous %}
+      <a href="{{ url_for('chat') }}">Messages</a>
       {% if current_user.username == 'admin' or current_user.role >= 2 %}
       <a href="{{ url_for('admin.index') }}">Admin</a>
       <a href="/dashboard">Monitoring Dashboard</a>
