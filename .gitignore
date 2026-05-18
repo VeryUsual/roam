@@ -1,6 +1,8 @@
 roam.db
 instance/videos/*
+!instance/videos/*.a
 instance/profilepictures/*
+!instance/profilepictures/*.a
 app/__pycache__
 __pycache__
 flask_monitoringdashboard.db
