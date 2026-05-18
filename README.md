@@ -20,20 +20,8 @@ flask run
 
 ## License
 
-This program is free software: you can redistribute it and/or modify
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-it under the terms of the GNU Affero General Public License as published by
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more details.
 
-the Free Software Foundation, either version 3 of the License, or
-
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-
-GNU Affero General Public License for more details.
-
-See (www.gnu.org/licenses)[https://www.gnu.org/licenses/] or the LICENSE file contained in this program for the full GNU Affero General Public License.
+See [www.gnu.org/licenses](https://www.gnu.org/licenses/) or the LICENSE file contained in this program for the full GNU Affero General Public License.
