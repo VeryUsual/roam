@@ -133,6 +133,9 @@ def before_request():
 
 @app.route("/")
 def index():
+    if User.query.count() == 0:
+        return redirect(url_for("setup"))
+
     if not current_user.is_authenticated:
         return redirect(url_for("welcome"))
 
@@ -361,6 +364,9 @@ def explore():
 
 @app.route("/welcome")
 def welcome():
+    if User.query.count() == 0:
+        return redirect(url_for("setup"))
+
     return render_template("welcome.html")
 
 
@@ -403,6 +409,11 @@ def register():
         db.session.commit()
         flash("You are now registered! Please log in with your details.")
         return redirect(url_for("login"))
+    username_override = request.args.get("username")
+    if username_override is None:
+        username_override = ""
+    form.username.default = username_override
+    form.process()
     return render_template("register.html", title="Register", form=form)
 
 
@@ -807,3 +818,7 @@ def comments(video_id):
         s
         + "<br><br><form action='' method='POST'><input type='text' style='position:fixed;bottom:0;left:0;font-size:small;width:10vw;color:black;background:white;' readonly name='replying_to' id='replying_to_input'><input type='text' style='position:fixed;bottom:0;left:10vw;font-size:larger;width:90vw;' name='msg'><button style='position:fixed;bottom:0;right:0;font-size:larger;' type='submit'>Submit</button></form>"
     )
+
+@app.route("/setup")
+def setup():
+    return render_template("setup.html")

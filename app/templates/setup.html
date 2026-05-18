@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+    <style>
+        body {
+            grid-template-columns: none !important;
+            display: block !important;
+        }
+    </style>
+    <h1>Welcome to Roam!</h1>
+    <p>This wizard will guide you through the setup process.</p>
+    <label for="languages">Preferred Display Language</label>
+    <select name="languages" id="languages">
+    <option value="english">English</option>
+    </select>
+    <br><br>
+    <p>Click the link below and keep the username as "admin". This will be your primary administrator account. You can give people moderator permissions and directly access the database with this account.</p>
+    <a href="/register?username=admin">Register</a>
+{% endblock %}
