@@ -819,6 +819,7 @@ def comments(video_id):
         + "<br><br><form action='' method='POST'><input type='text' style='position:fixed;bottom:0;left:0;font-size:small;width:10vw;color:black;background:white;' readonly name='replying_to' id='replying_to_input'><input type='text' style='position:fixed;bottom:0;left:10vw;font-size:larger;width:90vw;' name='msg'><button style='position:fixed;bottom:0;right:0;font-size:larger;' type='submit'>Submit</button></form>"
     )
 
+
 @app.route("/setup")
 def setup():
     return render_template("setup.html")
