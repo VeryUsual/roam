@@ -110,6 +110,14 @@
             xhttp.send();
         }
         is_saved();
+
+        function toggle_comments() {
+            if (document.getElementById("comments").style.display == "none") {
+                document.getElementById("comments").style.display = "block";
+            } else {
+                document.getElementById("comments").style.display = "none";
+            }
+        }
     </script>
 
     <div class="container">
@@ -119,7 +127,9 @@
             <button style="font-size: large;" onclick="like_video()" id="like_button">Like</button>
             <button style="font-size: large;" onclick="share_video()" id="share_button">Share</button>
             <button style="font-size: large;" onclick="save_video()" id="save_button">Save</button>
+            <br>
             <button style="font-size: large; color: red;" onclick="report_video()" id="report_button">Report</button>
+            <button style="font-size: large;" onclick="toggle_comments()" id="toggle_comments_button">Comments</button>
         </p>
 
         {% if video.author == current_user %}
@@ -154,5 +164,9 @@
 
             L.marker([{{ video.lat }}, {{ video.lon }}]).addTo(map);
         </script>
+
+        <div id="comments" style="position: absolute; top: 20vh; left: 5%; height: 50vh; width: 20vw; display: none;">
+            <iframe src="/comments/{{video.id}}" style="border: 1px solid black; height: 100%; width: 100%;"></iframe>
+        </div>
     </div>
 {% endblock %}

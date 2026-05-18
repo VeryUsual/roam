@@ -22,7 +22,7 @@ from app.forms import (
     ReportVideoForm,
     IssuePunishmentForm,
 )
-from app.models import User, Video, Report, SavedVideos
+from app.models import User, Video, Report, SavedVideos, Comment
 from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from math import radians
@@ -46,6 +46,7 @@ with app.app_context():
     db.create_all()
 
 dms = {}
+
 
 class RoamAdminModelView(ModelView):
     can_export = True
@@ -83,9 +84,12 @@ class RoamAdminUserModelView(RoamAdminModelView):
 class RoamAdminVideoModelView(RoamAdminModelView):
     form_excluded_columns = ["author", "likers", "viewers"]
 
+class RoamAdminCommentModelView(RoamAdminModelView):
+    can_create = False
 
 admin.add_view(RoamAdminUserModelView(User, db.session))
 admin.add_view(RoamAdminVideoModelView(Video, db.session))
+admin.add_view(RoamAdminCommentModelView(Comment, db.session))
 
 VIDEOS_FOLDER = "videos"
 ALLOWED_EXTENSIONS = {"mp4", "mov", "mkv", "webm", "ogv"}
@@ -687,8 +691,10 @@ def saved_videos_route():
         "saved_videos.html", title="Saved Videos", videos=savedvideos
     )
 
+
 def dm_room_string(user1, user2):
     return "&".join(sorted([str(user1), str(user2)]))
+
 
 @app.route("/chat", methods=["GET", "POST"])
 def chat():
@@ -697,21 +703,38 @@ def chat():
 
         if not username:
             return render_template("chat.html", error="Invalid username")
-        
+
         dms[dm_room_string(username, current_user.username)] = {"messages": []}
 
         return redirect(url_for("dm", username=username))
 
     return render_template("chat.html")
 
+
+@app.route("/chat/<username>")
+def chat_username(username):
+    if not username:
+        return render_template("chat.html", error="Invalid username")
+
+    dms[dm_room_string(username, current_user.username)] = {"messages": []}
+
+    return redirect(url_for("dm", username=username))
+
+
 @app.route("/dm/<username>")
 def dm(username):
     if username is None or dm_room_string(username, current_user.username) not in dms:
         return redirect(url_for("chat"))
-    
+
     messages = dms[dm_room_string(username, current_user.username)]["messages"]
 
-    return render_template("dm.html", username=username, room=dm_room_string(username, current_user.username), messages=messages)
+    return render_template(
+        "dm.html",
+        username=username,
+        room=dm_room_string(username, current_user.username),
+        messages=messages,
+    )
+
 
 @socketio.on("message")
 def message(data):
@@ -719,14 +742,17 @@ def message(data):
 
     if data["room"] not in dms:
         return
-    
-    content = {
-        "name": current_user.username,
-        "message": data["data"]
-    }
+
+    data["data"] = data["data"].replace(":skull:", "💀")
+    data["data"] = data["data"].replace(":cry:", "😭")
+    data["data"] = data["data"].replace(":heart:", "❤️")
+    data["data"] = data["data"].replace(":laughing:", "😂")
+
+    content = {"name": current_user.username, "message": data["data"]}
 
     dms[data["room"]]["messages"].append(content)
     emit("message", content, room=data["room"].replace("&", "&amp;"))
+
 
 @socketio.on("connect")
 def connect():
@@ -734,8 +760,24 @@ def connect():
     if room:
         join_room(room)
 
+
 @socketio.on("disconnect")
 def disconnect():
     room = request.args.get("room")
     if room:
         leave_room(room)
+
+@app.route("/comments/<video_id>", methods=['GET', 'POST'])
+def comments(video_id):
+    if request.method == "POST":
+        c = Comment(text=request.form.get("msg"), author=current_user, user_id=current_user.id, video_id=video_id)
+        replying_to = request.form.get("replying_to")
+        if replying_to != "" and replying_to is not None and int(replying_to) is not None:
+            c.parent_id = int(replying_to)
+        c.save()
+
+    s = ""
+    comments = db.session.scalars(Comment.query.filter_by(video_id=video_id).order_by(Comment.path.asc())).all()
+    for comment in comments:
+        s += '{}{}: {}'.format('&nbsp;&nbsp;&nbsp;&nbsp;' * comment.level(), comment.author.username, comment.text) + "<button style='font-size:x-small;margin-left: 4%;float:right;' onclick='document.getElementById(\"replying_to_input\").value = \"" + str(comment.id) + "\";'>Reply</button><br>"
+    return s + "<br><br><form action='' method='POST'><input type='text' style='position:fixed;bottom:0;left:0;font-size:small;width:10vw;color:black;background:white;' readonly name='replying_to' id='replying_to_input'><input type='text' style='position:fixed;bottom:0;left:10vw;font-size:larger;width:90vw;' name='msg'><button style='position:fixed;bottom:0;right:0;font-size:larger;' type='submit'>Submit</button></form>"

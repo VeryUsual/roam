@@ -81,6 +81,7 @@ class User(UserMixin, db.Model):
     saved_videos: so.Mapped[list["SavedVideos"]] = so.relationship(
         back_populates="user"
     )
+    comments: so.WriteOnlyMapped["Comment"] = so.Relationship(back_populates="author")
 
     def __repr__(self):
         return "<User {}>".format(self.username)
@@ -138,7 +139,7 @@ class User(UserMixin, db.Model):
                 )
             )
             .where(Video.privacy_level == 0)
-            .where(not Video.draft)
+            .where(Video.draft == False)
             .group_by(Video)
             .order_by(Video.timestamp.desc())
         )
@@ -212,6 +213,7 @@ class Video(db.Model):
     draft: so.Mapped[bool] = so.mapped_column(
         sa.Boolean, nullable=False, server_default="False", default=False
     )
+    comments: so.WriteOnlyMapped["Comment"] = so.Relationship(back_populates="video")
 
     def __repr__(self):
         return "<Video {}>".format(self.filepath)
@@ -262,3 +264,30 @@ class SavedVideos(db.Model):
     folder: so.Mapped[str] = so.mapped_column(sa.String(300), default="")
     user: so.Mapped[list["User"]] = so.relationship(back_populates="saved_videos")
     video: so.Mapped[list["Video"]] = so.relationship(back_populates="savers")
+
+
+class Comment(db.Model):
+    _N = 5
+
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.String(150))
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id), index=True)
+    author: so.Mapped[User] = so.relationship(back_populates="comments")
+    video_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(Video.id), index=True)
+    video: so.Mapped[Video] = so.relationship(back_populates="comments")
+    timestamp = db.Column(db.DateTime(), default=datetime.utcnow, index=True)
+    path = db.Column(db.Text, index=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey("comment.id"))
+    replies = db.relationship(
+        "Comment", backref=db.backref("parent", remote_side=[id]), lazy="dynamic"
+    )
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+        prefix = self.parent.path + "." if self.parent else ""
+        self.path = prefix + "{:0{}d}".format(self.id, self._N)
+        db.session.commit()
+
+    def level(self):
+        return len(self.path) // self._N - 1
