@@ -2,6 +2,14 @@
 
 {% block content %}
 
+<link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+<style>
+    body {
+        grid-template-columns: none !important;
+        display: block !important;
+    }
+</style>
+
 <h1>Welcome, {{current_user.username}}!</h1>
 
 <a href="/modpanel/reports" style="font-size: larger;">Review User Reports</a>

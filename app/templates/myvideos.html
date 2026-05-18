@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
+<link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+<style>
+    body {
+        grid-template-columns: none !important;
+        display: block !important;
+    }
+</style>
     <hr>
     {% for video in videos %}
     <a href="/videos/{{video.id}}" style="font-size: large;">{{video.description}}</a><br>

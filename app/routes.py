@@ -84,8 +84,10 @@ class RoamAdminUserModelView(RoamAdminModelView):
 class RoamAdminVideoModelView(RoamAdminModelView):
     form_excluded_columns = ["author", "likers", "viewers"]
 
+
 class RoamAdminCommentModelView(RoamAdminModelView):
     can_create = False
+
 
 admin.add_view(RoamAdminUserModelView(User, db.session))
 admin.add_view(RoamAdminVideoModelView(Video, db.session))
@@ -346,7 +348,7 @@ def explore():
         sa.select(Video)
         .order_by(Video.timestamp.desc())
         .where(Video.privacy_level == 0)
-        .where(not Video.draft)
+        .where(Video.draft == False)
     )
     videos = db.session.scalars(query).all()
 
@@ -767,17 +769,41 @@ def disconnect():
     if room:
         leave_room(room)
 
-@app.route("/comments/<video_id>", methods=['GET', 'POST'])
+
+@app.route("/comments/<video_id>", methods=["GET", "POST"])
 def comments(video_id):
     if request.method == "POST":
-        c = Comment(text=request.form.get("msg"), author=current_user, user_id=current_user.id, video_id=video_id)
+        c = Comment(
+            text=request.form.get("msg"),
+            author=current_user,
+            user_id=current_user.id,
+            video_id=video_id,
+        )
         replying_to = request.form.get("replying_to")
-        if replying_to != "" and replying_to is not None and int(replying_to) is not None:
+        if (
+            replying_to != ""
+            and replying_to is not None
+            and int(replying_to) is not None
+        ):
             c.parent_id = int(replying_to)
         c.save()
 
     s = ""
-    comments = db.session.scalars(Comment.query.filter_by(video_id=video_id).order_by(Comment.path.asc())).all()
+    comments = db.session.scalars(
+        Comment.query.filter_by(video_id=video_id).order_by(Comment.path.asc())
+    ).all()
     for comment in comments:
-        s += '{}{}: {}'.format('&nbsp;&nbsp;&nbsp;&nbsp;' * comment.level(), comment.author.username, comment.text) + "<button style='font-size:x-small;margin-left: 4%;float:right;' onclick='document.getElementById(\"replying_to_input\").value = \"" + str(comment.id) + "\";'>Reply</button><br>"
-    return s + "<br><br><form action='' method='POST'><input type='text' style='position:fixed;bottom:0;left:0;font-size:small;width:10vw;color:black;background:white;' readonly name='replying_to' id='replying_to_input'><input type='text' style='position:fixed;bottom:0;left:10vw;font-size:larger;width:90vw;' name='msg'><button style='position:fixed;bottom:0;right:0;font-size:larger;' type='submit'>Submit</button></form>"
+        s += (
+            "{}{}: {}".format(
+                "&nbsp;&nbsp;&nbsp;&nbsp;" * comment.level(),
+                comment.author.username,
+                comment.text,
+            )
+            + "<button style='font-size:x-small;margin-left: 4%;float:right;' onclick='document.getElementById(\"replying_to_input\").value = \""
+            + str(comment.id)
+            + "\";'>Reply</button><br>"
+        )
+    return (
+        s
+        + "<br><br><form action='' method='POST'><input type='text' style='position:fixed;bottom:0;left:0;font-size:small;width:10vw;color:black;background:white;' readonly name='replying_to' id='replying_to_input'><input type='text' style='position:fixed;bottom:0;left:10vw;font-size:larger;width:90vw;' name='msg'><button style='position:fixed;bottom:0;right:0;font-size:larger;' type='submit'>Submit</button></form>"
+    )
