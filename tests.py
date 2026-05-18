@@ -5,7 +5,7 @@ os.environ["DATABASE_URL"] = "sqlite://"
 from datetime import datetime, timezone, timedelta
 import unittest
 from app import app, db
-from app.models import User, Video
+from app.models import User, Video, Comment
 
 
 class UserModelCase(unittest.TestCase):
@@ -185,6 +185,83 @@ class VideoModelCase(unittest.TestCase):
         self.assertEqual(len(db.session.scalars(u1.following_videos()).all()), 1)
         p2.privacy_level = 0
         self.assertEqual(len(db.session.scalars(u1.following_videos()).all()), 2)
+
+class CommentModelCase(unittest.TestCase):
+    def setUp(self):
+        self.app_context = app.app_context()
+        self.app_context.push()
+        db.create_all()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
+    
+    def test_comments(self):
+        u = User(username="test")
+        u.set_password("s3crEt12@5161")
+        db.session.add(u)
+        db.session.commit()
+
+        v = Video(
+            filepath="test.mp4",
+            user_id=u.id,
+            lat=0.0,
+            lon=0.0,
+            description="test",
+            hashtags="#test",
+            privacy_level=0,
+            draft=False,
+        )
+        db.session.add(v)
+        db.session.commit()
+
+        c1 = Comment(text="parent comment", author=u, video=v)
+        c1.save()
+
+        self.assertIsNotNone(c1.id)
+        self.assertEqual(c1.text, "parent comment")
+        self.assertEqual(c1.author.username, "test")
+        self.assertEqual(c1.video.filepath, "test.mp4")
+        self.assertEqual(c1.path, f"{c1.id:0{c1._N}d}")
+        self.assertEqual(c1.level(), 0)
+
+        c2 = Comment(text="reply 1", author=u, video=v, parent=c1)
+        c2.save()
+
+        self.assertIsNotNone(c2.id)
+        self.assertEqual(c2.parent.id, c1.id)
+        self.assertEqual(c2.path, f"{c1.path}.{c2.id:0{c2._N}d}")
+        self.assertEqual(c2.level(), 1)
+
+        c3 = Comment(text="reply 2", author=u, video=v, parent=c1)
+        c3.save()
+
+        self.assertEqual(c1.replies.count(), 2)
+        self.assertIn(c2, c1.replies.all())
+        self.assertIn(c3, c1.replies.all())
+
+        user_comments = db.session.scalars(u.comments.select()).all()
+        video_comments = db.session.scalars(v.comments.select()).all()
+
+        self.assertEqual(len(user_comments), 3)
+        self.assertEqual(len(video_comments), 3)
+        self.assertEqual(user_comments[0].text, "parent comment")
+        self.assertEqual(video_comments[0].text, "parent comment")
+
+        before = datetime.utcnow()
+        c4 = Comment(text="timestamp test", author=u, video=v)
+        db.session.add(c4)
+        db.session.commit()
+        after = datetime.utcnow()
+
+        self.assertIsNotNone(c4.timestamp)
+        self.assertGreaterEqual(c4.timestamp, before)
+        self.assertLessEqual(c4.timestamp, after)
+
+        db.session.delete(c4)
+        db.session.commit()
+        self.assertIsNone(db.session.get(Comment, c4.id))
 
 
 if __name__ == "__main__":
