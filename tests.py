@@ -186,6 +186,7 @@ class VideoModelCase(unittest.TestCase):
         p2.privacy_level = 0
         self.assertEqual(len(db.session.scalars(u1.following_videos()).all()), 2)
 
+
 class CommentModelCase(unittest.TestCase):
     def setUp(self):
         self.app_context = app.app_context()
@@ -196,7 +197,7 @@ class CommentModelCase(unittest.TestCase):
         db.session.remove()
         db.drop_all()
         self.app_context.pop()
-    
+
     def test_comments(self):
         u = User(username="test")
         u.set_password("s3crEt12@5161")
